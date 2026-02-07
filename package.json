@@ -1,4 +1,5 @@
 {
+  "name": "npc-town",
   "private": true,
   "type": "module",
   "devDependencies": {
