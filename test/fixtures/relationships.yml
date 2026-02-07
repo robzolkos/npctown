@@ -1,0 +1,9 @@
+alice_knows_bob:
+  id: "rel_39MFjRsNHFJMjCEmkTui9nmsFbI"
+  agent_id: "agt_39MFjUlSSNoN54PqzcpjpHAprj1"
+  target_agent_id: "agt_39MFjRx3lyGEj8GlxA3Ot9oONhV"
+  trust: 20
+  affection: 15
+  respect: 25
+  familiarity: 40
+  last_interaction_tick: 10

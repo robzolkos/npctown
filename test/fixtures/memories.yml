@@ -1,0 +1,9 @@
+alice_observation:
+  id: "mem_39MFjW7ewjf6kSap7xTYzDENnea"
+  agent_id: "agt_39MFjUlSSNoN54PqzcpjpHAprj1"
+  memory_type: "observation"
+  content: "Arrived at Town Square. It seems busy today."
+  importance: 3
+  tick: 1
+  related_agent_ids: []
+  location_id: "loc_39MFjRpzXv5P5ywYrNEB9h1spEv"

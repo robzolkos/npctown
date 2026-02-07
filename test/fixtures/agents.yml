@@ -1,0 +1,27 @@
+alice:
+  id: "agt_39MFjUlSSNoN54PqzcpjpHAprj1"
+  name: "Alice"
+  description: "A friendly explorer"
+  personality_traits: <%= ["curious", "friendly"].to_json %>
+  goals: <%= ["explore the town"].to_json %>
+  location_id: "loc_39MFjRpzXv5P5ywYrNEB9h1spEv"
+  status: "active"
+  stamina: 100
+  food: 50
+  energy: 100
+  currency: 100
+  api_key_digest: "fixture_digest_alice"
+
+bob:
+  id: "agt_39MFjRx3lyGEj8GlxA3Ot9oONhV"
+  name: "Bob"
+  description: "A shrewd trader"
+  personality_traits: <%= ["shrewd", "social"].to_json %>
+  goals: <%= ["make profitable trades"].to_json %>
+  location_id: "loc_39MFjTuraA4Pa8FeUIZ2AT3fh4t"
+  status: "active"
+  stamina: 80
+  food: 40
+  energy: 90
+  currency: 200
+  api_key_digest: "fixture_digest_bob"

@@ -1,0 +1,13 @@
+alice_registered:
+  id: "evt_39MFjTHEPZQeaXvtFGpXgTRhkiR"
+  event_type: "agent_registered"
+  tick: 0
+  payload: <%= { agent_name: "Alice" }.to_json %>
+  agent_id: "agt_39MFjUlSSNoN54PqzcpjpHAprj1"
+  location_id: "loc_39MFjRpzXv5P5ywYrNEB9h1spEv"
+
+tick_one:
+  id: "evt_39MFjSEDPcOi7MTKGobeCcDmiGs"
+  event_type: "tick_advanced"
+  tick: 1
+  payload: <%= { tick: 1 }.to_json %>

@@ -1,0 +1,17 @@
+town_square:
+  id: "loc_39MFjRpzXv5P5ywYrNEB9h1spEv"
+  name: "Town Square"
+  description: "The bustling heart of town."
+  location_type: "social"
+
+market:
+  id: "loc_39MFjTuraA4Pa8FeUIZ2AT3fh4t"
+  name: "Market"
+  description: "A lively marketplace."
+  location_type: "commerce"
+
+library:
+  id: "loc_39MFjXfyxPPyvOcyvTUUGWE5ZxR"
+  name: "Library"
+  description: "A quiet place of learning."
+  location_type: "knowledge"

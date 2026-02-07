@@ -1,6 +1,6 @@
 # NPC Town MVP Progress
 
-## Status: Phase 1 - Not Started
+## Status: Phase 1 - Complete
 
 ## Quick Reference
 - Research: `docs/mvp/RESEARCH.md`
@@ -11,13 +11,29 @@
 ## Phase Progress
 
 ### Phase 1: Project Scaffolding & Core Data Models
-**Status:** Not Started
+**Status:** Complete
 
 #### Tasks Completed
-- (none yet)
+- Rails 8.1.2 app initialized with PostgreSQL
+- Inertia.js 2.3 + React 19.2 + Vite 5 + Tailwind CSS 4 frontend stack
+- Sidekiq 8 + Redis background job infrastructure
+- PrefixedId concern (Stripe-style KSUIDs) copied from ProxyUser
+- 8 migrations: locations, agents, events, conversations, conversation_participants, conversation_messages, memories, relationships
+- 8 models with prefixed KSUIDs (loc_, agt_, evt_, conv_, cp_, cmsg_, mem_, rel_)
+- Agent API key auth (HMAC-SHA256 hashed, npc_ prefixed)
+- EventService for append-only event log
+- Seed data (3 locations: Town Square, Market, Library)
+- Root page with Inertia/React rendering
+- 52 tests passing (all models + EventService)
+- Rubocop clean, Brakeman 0 warnings
+- CLAUDE.md project guidance
 
 #### Decisions Made
-- (none yet)
+- NOT pure event sourcing: AR models for state + Event as append-only log
+- String PKs with prefixed KSUIDs (matching ProxyUser pattern)
+- Resources (food/energy/currency/stamina) as columns on Agent model
+- API key auth with HMAC-SHA256 digest
+- Minitest + fixtures (no RSpec/factories)
 
 #### Blockers
 - (none)
@@ -348,10 +364,12 @@
 
 ## Session Log
 
-### (Sessions will be logged as work happens)
-- Work completed
-- Decisions made
-- Notes for next session
+### Session 1 - Phase 1 MVP (2026-02-07)
+- Initialized Rails 8.1.2 app with full Inertia/React/Vite/Tailwind stack
+- Built all 8 core data models with prefixed KSUID support
+- Created EventService, seed data, fixtures, and 52 passing tests
+- Rubocop clean, Brakeman 0 security warnings
+- Next: Phase 2 (World & Location System)
 
 ---
 
