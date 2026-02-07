@@ -1,6 +1,6 @@
 # NPC Town MVP Progress
 
-## Status: Phase 1 - Complete
+## Status: Phase 2 - Complete
 
 ## Quick Reference
 - Research: `docs/mvp/RESEARCH.md`
@@ -41,13 +41,21 @@
 ---
 
 ### Phase 2: World & Location System
-**Status:** Not Started
+**Status:** Complete
 
 #### Tasks Completed
-- (none yet)
+- WorldService with move_agent, agents_at, location_for, setup_world
+- Rich location descriptions for MVP locations (Town Square, Market, Library)
+- Movement validation (prevents moving to current location)
+- agent_moved event emission with from/to payload
+- Seeds simplified to use WorldService.setup_world
+- 9 new tests (61 total passing), rubocop clean
 
 #### Decisions Made
-- (none yet)
+- No World model needed — WorldService + Location model is sufficient
+- Movement takes model objects (not IDs) matching EventService pattern
+- tick parameter passed explicitly (Phase 3 will provide tick engine)
+- No transaction wrapping move + event (acceptable for now)
 
 #### Blockers
 - (none)
@@ -369,7 +377,14 @@
 - Built all 8 core data models with prefixed KSUID support
 - Created EventService, seed data, fixtures, and 52 passing tests
 - Rubocop clean, Brakeman 0 security warnings
-- Next: Phase 2 (World & Location System)
+
+### Session 2 - Phase 2 World & Location System (2026-02-07)
+- Created WorldService with move_agent, agents_at, location_for, setup_world
+- Rich location descriptions for all 3 MVP locations
+- Movement validation and agent_moved event emission
+- Simplified seeds to delegate to WorldService
+- 9 new tests (61 total), rubocop clean
+- Next: Phase 3 (Simulation Loop / Tick Engine)
 
 ---
 
