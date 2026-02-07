@@ -6,9 +6,13 @@
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
 
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+    <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@100..900&display=swap" rel="stylesheet">
+
+    <%= vite_react_refresh_tag %>
     <%= vite_client_tag %>
-    <%= vite_stylesheet_tag "application", media: "all" %>
-    <%= vite_typescript_tag "inertia" %>
+    <%= vite_javascript_tag "inertia.tsx" %>
   </head>
 
   <body>
