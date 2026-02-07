@@ -25,8 +25,8 @@ Rails.application.configure do
     config.action_controller.perform_caching = false
   end
 
-  # Change to :null_store to avoid any caching.
-  config.cache_store = :memory_store
+  # Use Redis for caching (consistent with production)
+  config.cache_store = :redis_cache_store, { url: ENV.fetch("REDIS_URL", "redis://localhost:6379/1") }
 
   # Print deprecation notices to the Rails logger.
   config.active_support.deprecation = :log
