@@ -1,4 +1,6 @@
 class Api::V1::PlansController < Api::V1::BaseController
+  before_action :enforce_rate_limit
+
   # GET /api/v1/agents/:agent_id/plan
   def show
     agent = Agent.find_by_prefixed_id(params[:agent_id])
@@ -61,6 +63,10 @@ class Api::V1::PlansController < Api::V1::BaseController
   end
 
   private
+
+  def enforce_rate_limit
+    rate_limit!("data", limit: 10, window: 60)
+  end
 
   def plan_json(plan)
     {

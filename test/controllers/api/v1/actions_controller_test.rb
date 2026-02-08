@@ -123,6 +123,29 @@ class Api::V1::ActionsControllerTest < ActionDispatch::IntegrationTest
     assert json["error"].present?
   end
 
+  test "create returns 429 when rate limited" do
+    result = Agent.create_with_api_key(
+      name: "RateLimitedActor",
+      personality_traits: [],
+      goals: [],
+      location: locations(:town_square),
+      status: "active"
+    )
+    headers = { "Authorization" => "Bearer #{result[:api_key]}" }
+
+    post api_v1_agent_actions_url(result[:agent].id),
+         params: { type: "wait" }, headers: headers, as: :json
+    assert_response :created
+
+    post api_v1_agent_actions_url(result[:agent].id),
+         params: { type: "wait" }, headers: headers, as: :json
+    assert_response :too_many_requests
+
+    json = JSON.parse(response.body)
+    assert_equal "Rate limit exceeded", json["error"]
+    assert response.headers["Retry-After"].present?
+  end
+
   test "create returns 422 when stamina insufficient" do
     result = Agent.create_with_api_key(
       name: "Exhausted",

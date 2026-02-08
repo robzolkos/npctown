@@ -1,4 +1,6 @@
 class Api::V1::MemoriesController < Api::V1::BaseController
+  before_action :enforce_rate_limit
+
   def index
     agent = Agent.find_by_prefixed_id(params[:agent_id])
     return render_error("Agent not found", :not_found) unless agent
@@ -19,6 +21,10 @@ class Api::V1::MemoriesController < Api::V1::BaseController
   end
 
   private
+
+  def enforce_rate_limit
+    rate_limit!("data", limit: 10, window: 60)
+  end
 
   def memory_json(memory)
     {

@@ -1,4 +1,6 @@
 class Api::V1::ActionsController < Api::V1::BaseController
+  before_action :enforce_rate_limit
+
   # POST /api/v1/agents/:agent_id/actions
   def create
     agent = Agent.find_by_prefixed_id(params[:agent_id])
@@ -17,6 +19,10 @@ class Api::V1::ActionsController < Api::V1::BaseController
   end
 
   private
+
+  def enforce_rate_limit
+    rate_limit!("action", limit: 1, window: 5)
+  end
 
   def action_params
     {

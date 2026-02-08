@@ -1,6 +1,6 @@
 # NPC Town MVP Progress
 
-## Status: Phase 13 - Complete
+## Status: Phase 14 - Complete
 
 ## Quick Reference
 - Research: `docs/mvp/RESEARCH.md`
@@ -376,13 +376,25 @@
 ---
 
 ### Phase 14: Stamina & Rate Limiting
-**Status:** Not Started
+**Status:** Complete
 
 #### Tasks Completed
-- (none yet)
+- StaminaService rewritten: slow regen via Redis counter, +1 stamina every 180 ticks (~4/hour at 5s ticks)
+- Stamina costs updated: rest 2→0 (free to encourage recovery), trade 1→3 (more expensive)
+- Stamina=0 guard in ActionService: agents can only wait or rest when stamina depleted
+- PerceptionService: availableActions returns only ["wait", "rest"] at stamina=0
+- RateLimitService: Redis fixed-window counter with INCR+EXPIRE in MULTI
+- Rate limiting on perception (1/5s) and actions (1/5s) controllers
+- Rate limiting on data endpoints (memories, reflections, relationships, plans) — shared 10/min bucket
+- BaseController: rescue_from RateLimitExceeded → 429 with Retry-After header
+- 10 new tests (349 total), rubocop clean, 0 offenses
 
 #### Decisions Made
-- (none yet)
+- Redis counter approach for slow regen (not fractional float column) — only hits DB every 180th tick
+- Fixed-window rate limiting over sliding window — simpler, sufficient for game simulation
+- Shared "data" rate limit bucket for memories/reflections/relationships/plans (10/min total)
+- AgentsController not rate limited (create/list/show are public, destroy is rare)
+- Stamina=0 blocks all actions except wait and rest (including zero-cost actions like reflect/leaveConversation)
 
 #### Blockers
 - (none)
@@ -635,6 +647,18 @@
 - 35 new tests (339 total), rubocop clean, 0 offenses
 - Next: Phase 14 (Stamina & Rate Limiting)
 
+### Session 14 - Phase 14 Stamina & Rate Limiting (2026-02-08)
+- Rewrote StaminaService: slow regen via Redis counter (+1 every 180 ticks, ~4/hour)
+- Updated stamina costs: rest 0 (free), trade 3 (expensive)
+- Added stamina=0 guard: only wait/rest allowed when depleted
+- Created RateLimitService with Redis fixed-window counters (INCR+EXPIRE in MULTI)
+- Added rate limiting to 6 controllers: perception 1/5s, actions 1/5s, data endpoints 10/min
+- BaseController rescue_from → 429 with Retry-After header
+- 10 new tests (349 total), rubocop clean, 0 offenses
+- Updated Docs.tsx: stamina costs, 429 error code, rate limiting & stamina=0 notes
+- Manual API verification: all stamina costs, stamina=0 restrictions, rate limiting 429s confirmed
+- Next: Phase 15 (Spectator API / SSE Stream)
+
 ---
 
 ## Files Changed
@@ -739,6 +763,25 @@
 - `test/services/action_service_test.rb` (modified — rest/eat/trade/exhaustion tests)
 - `test/services/perception_service_test.rb` (modified — resourceStatus, availableActions updates)
 
+### Phase 14
+- `app/services/stamina_service.rb` (rewritten — slow regen via Redis counter)
+- `app/services/action_service.rb` (modified — rest=0, trade=3, stamina=0 guard)
+- `app/services/perception_service.rb` (modified — stamina=0 early return in available_actions)
+- `app/services/rate_limit_service.rb` (created — Redis fixed-window rate limiting)
+- `app/controllers/api/v1/base_controller.rb` (modified — rescue_from + rate_limit! helper)
+- `app/controllers/api/v1/perceptions_controller.rb` (modified — rate limit 1/5s)
+- `app/controllers/api/v1/actions_controller.rb` (modified — rate limit 1/5s)
+- `app/controllers/api/v1/memories_controller.rb` (modified — rate limit 10/60s)
+- `app/controllers/api/v1/reflections_controller.rb` (modified — rate limit 10/60s)
+- `app/controllers/api/v1/relationships_controller.rb` (modified — rate limit 10/60s)
+- `app/controllers/api/v1/plans_controller.rb` (modified — rate limit 10/60s)
+- `test/services/stamina_service_test.rb` (rewritten — Redis counter regen tests)
+- `test/services/rate_limit_service_test.rb` (created — 3 tests)
+- `test/services/action_service_test.rb` (modified — fixed rest/trade costs + 4 stamina=0 tests)
+- `test/controllers/api/v1/perceptions_controller_test.rb` (modified — 429 test)
+- `test/controllers/api/v1/actions_controller_test.rb` (modified — 429 test)
+- `app/frontend/pages/Docs.tsx` (modified — stamina costs, 429 error code, rate limiting notes, stamina=0 notes)
+
 ## Architectural Decisions
 - concurrent-ruby TimerTask over sidekiq-scheduler for tick advancement (precision, zero overhead)
 - Derive current tick from Events table rather than separate storage
@@ -760,6 +803,10 @@
 - Exhaustion enforced in ActionService.validate! (not a separate agent status) — energy=0 restricts to wait/move/rest/eat
 - Resource decay inline in tick listener, events only on thresholds (energy/food hitting 0) to reduce noise
 - Market bonus every 720 ticks using Location.by_type("commerce")
+- Redis counter for slow stamina regen — only DB query every 180th tick, 179/180 ticks cost just a Redis INCR
+- Fixed-window rate limiting (INCR+EXPIRE in MULTI) over sliding window — simpler, sufficient for game simulation
+- Shared "data" rate limit bucket across data endpoints — simpler than per-endpoint limits
+- Stamina=0 guard separate from energy=0 exhaustion guard — different allowed action sets
 
 ## Lessons Learned
 - Parallel tests sharing Redis need process-scoped keys for isolation

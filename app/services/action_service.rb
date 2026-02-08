@@ -13,9 +13,9 @@ class ActionService
     "leaveConversation" => 0,
     "conversationMessage" => 1,
     "reflect" => 0,
-    "rest" => 2,
+    "rest" => 0,
     "eat" => 1,
-    "trade" => 1
+    "trade" => 3
   }.freeze
 
   def self.execute(agent:, action_type:, params: {})
@@ -52,6 +52,10 @@ class ActionService
 
     cost = STAMINA_COSTS[action_type]
     raise ActionError, "Insufficient stamina" if agent.stamina < cost
+
+    if agent.stamina == 0 && !%w[wait rest].include?(action_type)
+      raise ActionError, "Agent has no stamina and can only wait or rest"
+    end
 
     if agent.energy == 0 && !%w[wait move rest eat].include?(action_type)
       raise ActionError, "Agent is exhausted (energy=0) and can only wait, move, rest, or eat"

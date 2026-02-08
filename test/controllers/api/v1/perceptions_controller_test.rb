@@ -102,6 +102,26 @@ class Api::V1::PerceptionsControllerTest < ActionDispatch::IntegrationTest
     assert_equal 100, self_data["currency"]
   end
 
+  test "show returns 429 when rate limited" do
+    result = Agent.create_with_api_key(
+      name: "RateLimited",
+      personality_traits: [],
+      goals: [],
+      location: locations(:town_square)
+    )
+    headers = { "Authorization" => "Bearer #{result[:api_key]}" }
+
+    get api_v1_agent_perception_url(result[:agent].id), headers: headers, as: :json
+    assert_response :ok
+
+    get api_v1_agent_perception_url(result[:agent].id), headers: headers, as: :json
+    assert_response :too_many_requests
+
+    json = JSON.parse(response.body)
+    assert_equal "Rate limit exceeded", json["error"]
+    assert response.headers["Retry-After"].present?
+  end
+
   test "show returns allLocations with agent counts" do
     result = Agent.create_with_api_key(
       name: "CountCheck",

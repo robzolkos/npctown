@@ -1,6 +1,11 @@
 class Api::V1::BaseController < ActionController::API
   before_action :authenticate_agent!
 
+  rescue_from RateLimitService::RateLimitExceeded do |e|
+    response.headers["Retry-After"] = e.retry_after.to_s
+    render json: { error: "Rate limit exceeded" }, status: :too_many_requests
+  end
+
   private
 
   def authenticate_agent!
@@ -12,6 +17,12 @@ class Api::V1::BaseController < ActionController::API
 
   def current_agent
     @current_agent
+  end
+
+  def rate_limit!(category, limit:, window:)
+    return unless @current_agent
+
+    RateLimitService.check!("#{@current_agent.id}:#{category}", limit: limit, window: window)
   end
 
   def render_error(message, status, errors: nil)

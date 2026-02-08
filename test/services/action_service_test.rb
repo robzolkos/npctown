@@ -343,14 +343,14 @@ class ActionServiceTest < ActiveSupport::TestCase
 
   # --- Rest ---
 
-  test "rest restores energy and deducts 2 stamina" do
+  test "rest restores energy with no stamina cost" do
     alice = agents(:alice)
     alice.update_column(:energy, 50)
 
     result = ActionService.execute(agent: alice, action_type: "rest")
 
     assert result[:success]
-    assert_equal 98, alice.reload.stamina
+    assert_equal 100, alice.reload.stamina
     assert_equal 80, alice.energy
   end
 
@@ -379,7 +379,7 @@ class ActionServiceTest < ActiveSupport::TestCase
 
   # --- Trade ---
 
-  test "trade transfers resource and deducts 1 stamina" do
+  test "trade transfers resource and deducts 3 stamina" do
     alice = agents(:alice)
     charlie = agents(:charlie)
 
@@ -390,7 +390,7 @@ class ActionServiceTest < ActiveSupport::TestCase
     )
 
     assert result[:success]
-    assert_equal 99, alice.reload.stamina
+    assert_equal 97, alice.reload.stamina
     assert_equal 75, alice.currency
     assert_equal 125, charlie.reload.currency
   end
@@ -437,5 +437,43 @@ class ActionServiceTest < ActiveSupport::TestCase
     result = ActionService.execute(agent: alice, action_type: "eat")
     assert result[:success]
     assert_equal 40, alice.reload.energy
+  end
+
+  # --- Stamina depletion ---
+
+  test "stamina=0 agent can wait" do
+    alice = agents(:alice)
+    alice.update!(stamina: 0)
+
+    result = ActionService.execute(agent: alice, action_type: "wait")
+    assert result[:success]
+  end
+
+  test "stamina=0 agent can rest" do
+    alice = agents(:alice)
+    alice.update_columns(stamina: 0, energy: 50)
+
+    result = ActionService.execute(agent: alice, action_type: "rest")
+    assert result[:success]
+  end
+
+  test "stamina=0 agent cannot speak" do
+    alice = agents(:alice)
+    alice.update!(stamina: 0)
+
+    error = assert_raises(ActionService::ActionError) do
+      ActionService.execute(agent: alice, action_type: "speak", params: { message: "Hi" })
+    end
+    assert_match(/stamina/, error.message)
+  end
+
+  test "stamina=0 agent cannot reflect even though it costs 0" do
+    alice = agents(:alice)
+    alice.update!(stamina: 0)
+
+    error = assert_raises(ActionService::ActionError) do
+      ActionService.execute(agent: alice, action_type: "reflect", params: { content: "thinking..." })
+    end
+    assert_match(/stamina/, error.message)
   end
 end

@@ -150,6 +150,8 @@ class PerceptionService
   private_class_method :current_plan
 
   def self.available_actions(agent)
+    return %w[wait rest] if agent.stamina == 0
+
     actions = BASE_ACTIONS.dup
     actions << "reflect" if agent.memories.observations.unreflected.count >= REFLECT_THRESHOLD
     actions << "rest"
