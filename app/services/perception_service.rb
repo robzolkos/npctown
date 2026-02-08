@@ -16,6 +16,7 @@ class PerceptionService
       relevantMemories: relevant_memories(agent, location),
       recentReflections: recent_reflections(agent),
       unreflectedObservations: unreflected_observations(agent),
+      currentPlan: current_plan(agent),
       self: self_json(agent),
       availableActions: available_actions(agent),
       allLocations: all_locations
@@ -131,6 +132,20 @@ class PerceptionService
     }
   end
   private_class_method :unreflected_observations
+
+  def self.current_plan(agent)
+    plan = agent.active_plan
+    return nil unless plan
+
+    {
+      id: plan.id,
+      goal: plan.goal,
+      steps: plan.steps,
+      createdAtTick: plan.created_at_tick,
+      lastUpdatedAtTick: plan.last_updated_at_tick
+    }
+  end
+  private_class_method :current_plan
 
   def self.available_actions(agent)
     actions = BASE_ACTIONS.dup

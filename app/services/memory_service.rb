@@ -17,7 +17,11 @@ class MemoryService
     "conversation_message"  => 5,
     "conversation_ended"    => 6,
     "agent_registered"      => 7,
-    "relationship_changed"  => 7
+    "relationship_changed"  => 7,
+    "plan_created"          => 5,
+    "plan_updated"          => 3,
+    "plan_completed"        => 6,
+    "plan_abandoned"        => 4
   }.freeze
 
   SKIP_EVENT_TYPES = %w[tick_advanced memory_created reflection_created].freeze
@@ -216,6 +220,15 @@ class MemoryService
       else
         "#{agent_name} exerted themselves"
       end
+    when "plan_created"
+      "#{agent_name} formed a plan: #{payload['goal']}"
+    when "plan_updated"
+      "#{agent_name} updated their plan: #{payload['goal']}"
+    when "plan_completed"
+      "#{agent_name} completed their plan: #{payload['goal']}"
+    when "plan_abandoned"
+      reason_note = payload["reason"] == "stale" ? " (abandoned due to inactivity)" : ""
+      "#{agent_name} abandoned their plan: #{payload['goal']}#{reason_note}"
     end
   end
   private_class_method :describe_event

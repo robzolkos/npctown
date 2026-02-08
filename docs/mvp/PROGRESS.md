@@ -1,6 +1,6 @@
 # NPC Town MVP Progress
 
-## Status: Phase 10 - Complete
+## Status: Phase 11 - Complete
 
 ## Quick Reference
 - Research: `docs/mvp/RESEARCH.md`
@@ -284,13 +284,32 @@
 ---
 
 ### Phase 11: Planning System
-**Status:** Not Started
+**Status:** Complete
 
 #### Tasks Completed
-- (none yet)
+- Migration: `plans` table with string PK (KSUID), agent_id FK, goal (text), steps (JSONB), status, created_at_tick, last_updated_at_tick
+- Plan model with PrefixedId (`plan_`), validations, scopes (active, for_agent, recent), `stale?` method
+- Agent model: `has_many :plans, dependent: :destroy` + `active_plan` convenience method
+- Event model: 4 new event types (plan_created, plan_updated, plan_completed, plan_abandoned)
+- PlanService: create_plan, update_plan, complete_plan, abandon_plan, on_tick auto-abandon (200 tick threshold), normalize_steps
+- PlansController: GET show (active plan), POST create (new plan, auto-abandons existing), PATCH update (update/complete/abandon)
+- Routes: `resource :plan, only: [:show, :create, :update]` nested under agents
+- Registered PlanService as SimulationService tick listener in sidekiq.rb
+- MemoryService: plan event importance scoring (5/3/6/4) and human-readable descriptions for all 4 plan event types
+- PerceptionService: `currentPlan` key added to perception payload (goal, steps, ticks)
+- Plan fixtures (alice_active_plan, bob_completed_plan)
+- Tests: 12 model tests, 17 service tests, 10 controller integration tests
+- API docs (Docs.tsx): 3 plan endpoints, perception update, How Agents Work update, Agent Loop update
+- 288 tests passing, rubocop clean, 0 offenses
 
 #### Decisions Made
-- (none yet)
+- Dedicated Plan model (not Memory) — needs structured fields (goal, steps[], status, lifecycle ticks) that Memory doesn't have
+- Dedicated REST endpoints (resource :plan) instead of adding action types — matches resource :perception singular pattern, cleaner and more RESTful
+- PATCH update handles three operations via action_type param: "complete", "abandon", or default update
+- Auto-abandons existing active plan when creating a new one (only one active plan per agent)
+- Plan events NOT skipped by MemoryService — they are meaningful observable events that nearby agents should form memories about
+- PlanService registered as tick listener for auto-abandoning stale plans (200 tick threshold)
+- normalize_steps converts both string arrays and object arrays to consistent `[{ description, done }]` format
 
 #### Blockers
 - (none)
@@ -554,6 +573,18 @@
 - 25 new tests (249 total), rubocop clean, 0 offenses
 - Next: Phase 11 (Planning System)
 
+### Session 11 - Phase 11 Planning System (2026-02-08)
+- Created Plan model with PrefixedId (plan_), validations, scopes, stale? method
+- Migration: plans table with JSONB steps, status lifecycle, tick tracking
+- PlanService: full lifecycle (create, update, complete, abandon) + tick listener for stale auto-abandon
+- PlansController: GET show, POST create, PATCH update (with complete/abandon action_type)
+- 4 new event types: plan_created, plan_updated, plan_completed, plan_abandoned
+- MemoryService: plan event importance scoring + human-readable descriptions
+- PerceptionService: currentPlan added to perception payload
+- API docs: 3 plan endpoints, perception currentPlan, How Agents Work + Agent Loop updates
+- 39 new tests (288 total), rubocop clean, 0 offenses
+- Next: Phase 12 (Relationship Tracking)
+
 ---
 
 ## Files Changed
@@ -616,6 +647,24 @@
 - `test/services/reflection_service_test.rb` (created — 10 tests)
 - `test/controllers/api/v1/reflections_controller_test.rb` (created — 4 tests)
 - `test/services/perception_service_test.rb` (modified — 5 new tests for reflection data)
+
+### Phase 11
+- `db/migrate/20260208000003_create_plans.rb` (created — plans table with JSONB steps)
+- `app/models/plan.rb` (created — PrefixedId, validations, scopes, stale?)
+- `app/models/agent.rb` (modified — has_many :plans, active_plan method)
+- `app/models/event.rb` (modified — 4 new plan event types)
+- `app/services/plan_service.rb` (created — plan lifecycle + tick listener)
+- `app/controllers/api/v1/plans_controller.rb` (created — show, create, update)
+- `config/routes.rb` (modified — added plan resource)
+- `config/initializers/sidekiq.rb` (modified — registered PlanService listener)
+- `app/services/memory_service.rb` (modified — plan event importance + descriptions)
+- `app/services/perception_service.rb` (modified — currentPlan in perception)
+- `app/frontend/pages/Docs.tsx` (modified — plan endpoints, perception, agent loop)
+- `test/fixtures/plans.yml` (created — 2 fixtures)
+- `test/models/plan_test.rb` (created — 12 tests)
+- `test/services/plan_service_test.rb` (created — 17 tests)
+- `test/controllers/api/v1/plans_controller_test.rb` (created — 10 tests)
+- `test/models/event_test.rb` (modified — updated TYPES count + plan type assertions)
 
 ## Architectural Decisions
 - concurrent-ruby TimerTask over sidekiq-scheduler for tick advancement (precision, zero overhead)

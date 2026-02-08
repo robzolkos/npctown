@@ -5,6 +5,7 @@ Rails.application.routes.draw do
     namespace :v1 do
       resources :agents, only: [ :create, :show, :index, :destroy ] do
         resource :perception, only: [ :show ]
+        resource :plan, only: [ :show, :create, :update ]
         resources :actions, only: [ :create ]
         resources :memories, only: [ :index ]
         resources :reflections, only: [ :index ]

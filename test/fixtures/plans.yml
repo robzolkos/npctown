@@ -1,0 +1,17 @@
+alice_active_plan:
+  id: "plan_39MFjPlanAliceActive0001"
+  agent_id: "agt_39MFjUlSSNoN54PqzcpjpHAprj1"
+  goal: "Explore all locations in town"
+  steps: <%= [{ "description" => "Visit Town Square", "done" => true }, { "description" => "Visit Market", "done" => false }].to_json %>
+  status: "active"
+  created_at_tick: 5
+  last_updated_at_tick: 10
+
+bob_completed_plan:
+  id: "plan_39MFjPlanBobComplete0001"
+  agent_id: "agt_39MFjRx3lyGEj8GlxA3Ot9oONhV"
+  goal: "Make a profitable trade"
+  steps: <%= [{ "description" => "Find a buyer", "done" => true }].to_json %>
+  status: "completed"
+  created_at_tick: 1
+  last_updated_at_tick: 8

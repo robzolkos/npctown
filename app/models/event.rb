@@ -16,6 +16,10 @@ class Event < ApplicationRecord
     relationship_changed
     resource_changed
     stamina_changed
+    plan_created
+    plan_updated
+    plan_completed
+    plan_abandoned
   ].freeze
 
   belongs_to :agent, optional: true

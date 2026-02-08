@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_08_000002) do
+ActiveRecord::Schema[8.1].define(version: 2026_02_08_000003) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -111,6 +111,20 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_08_000002) do
     t.index ["search_vector"], name: "index_memories_on_search_vector", using: :gin
   end
 
+  create_table "plans", id: { type: :string, limit: 32 }, force: :cascade do |t|
+    t.string "agent_id", limit: 32, null: false
+    t.datetime "created_at", null: false
+    t.integer "created_at_tick", null: false
+    t.text "goal", null: false
+    t.integer "last_updated_at_tick", null: false
+    t.string "status", default: "active", null: false
+    t.jsonb "steps", default: [], null: false
+    t.datetime "updated_at", null: false
+    t.index ["agent_id", "status"], name: "index_plans_on_agent_id_and_status"
+    t.index ["last_updated_at_tick"], name: "index_plans_on_last_updated_at_tick"
+    t.index ["status"], name: "index_plans_on_status"
+  end
+
   create_table "relationships", id: { type: :string, limit: 32 }, force: :cascade do |t|
     t.integer "affection", default: 0, null: false
     t.string "agent_id", limit: 32, null: false
@@ -135,6 +149,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_08_000002) do
   add_foreign_key "events", "locations"
   add_foreign_key "memories", "agents"
   add_foreign_key "memories", "locations"
+  add_foreign_key "plans", "agents"
   add_foreign_key "relationships", "agents"
   add_foreign_key "relationships", "agents", column: "target_agent_id"
 end

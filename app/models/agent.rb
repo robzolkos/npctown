@@ -23,6 +23,7 @@ class Agent < ApplicationRecord
   has_many :conversation_participants, dependent: :destroy
   has_many :conversations, through: :conversation_participants
   has_many :conversation_messages, dependent: :destroy
+  has_many :plans, dependent: :destroy
 
   validates :name, presence: true, uniqueness: true
   validates :status, presence: true, inclusion: { in: STATUSES }
@@ -35,6 +36,10 @@ class Agent < ApplicationRecord
   validate :validate_goals_limit
 
   scope :active, -> { where(status: "active") }
+
+  def active_plan
+    plans.active.first
+  end
   scope :at_location, ->(location) { where(location: location) }
   scope :online, -> { where(status: %w[active idle]) }
 

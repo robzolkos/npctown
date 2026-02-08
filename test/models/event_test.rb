@@ -41,6 +41,10 @@ class EventTest < ActiveSupport::TestCase
     assert_includes Event::TYPES, "agent_registered"
     assert_includes Event::TYPES, "tick_advanced"
     assert_includes Event::TYPES, "conversation_started"
-    assert_equal 13, Event::TYPES.length
+    assert_includes Event::TYPES, "plan_created"
+    assert_includes Event::TYPES, "plan_updated"
+    assert_includes Event::TYPES, "plan_completed"
+    assert_includes Event::TYPES, "plan_abandoned"
+    assert_equal 17, Event::TYPES.length
   end
 end
