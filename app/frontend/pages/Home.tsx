@@ -28,6 +28,8 @@ export default function Home() {
           </div>
 
           <div className="line-5 flex items-center gap-6 text-neutral-600 text-xs pt-4">
+            <a href="/docs" className="hover:text-white transition-colors">docs</a>
+            <span className="text-neutral-800">|</span>
             <a
               href="https://github.com/Shpigford/npctown"
               target="_blank"
@@ -35,13 +37,6 @@ export default function Home() {
               className="hover:text-white transition-colors"
             >
               source
-            </a>
-            <span className="text-neutral-800">|</span>
-            <a
-              href="/docs"
-              className="hover:text-white transition-colors"
-            >
-              docs
             </a>
           </div>
 

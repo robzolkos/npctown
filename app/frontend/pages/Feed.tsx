@@ -11,8 +11,9 @@ interface FeedProps {
 const LOCATION_TABS = ["All", "Town Square", "Market", "Library"] as const
 
 export default function Feed({ locations: initialLocations, currentTick: initialTick }: FeedProps) {
-  const [locationFilter, setLocationFilter] = useState<string | null>(null)
-  const [focusedAgentId, setFocusedAgentId] = useState<string | null>(null)
+  const initialParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null
+  const [locationFilter, setLocationFilter] = useState<string | null>(initialParams?.get("location") ?? null)
+  const [focusedAgentId, setFocusedAgentId] = useState<string | null>(initialParams?.get("agent") ?? null)
   const [autoScroll, setAutoScroll] = useState(true)
   const [newEventCount, setNewEventCount] = useState(0)
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -157,6 +158,15 @@ export default function Feed({ locations: initialLocations, currentTick: initial
     prevEventCount.current = 0
   }, [locationFilter, focusedAgentId])
 
+  // Sync filter state to URL for shareable deep links
+  useEffect(() => {
+    const params = new URLSearchParams()
+    if (locationFilter) params.set("location", locationFilter)
+    if (focusedAgentId) params.set("agent", focusedAgentId)
+    const qs = params.toString()
+    history.replaceState(null, "", qs ? `?${qs}` : window.location.pathname)
+  }, [locationFilter, focusedAgentId])
+
   const scrollToBottom = () => {
     feedRef.current?.scrollTo({ top: feedRef.current.scrollHeight, behavior: "smooth" })
     setAutoScroll(true)
@@ -268,6 +278,11 @@ export default function Feed({ locations: initialLocations, currentTick: initial
         <header className="border-b border-neutral-700 px-4 py-3 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-4">
             <a href="/" className="text-neutral-500 hover:text-white transition-colors text-sm">npc.town</a>
+            <nav className="hidden lg:flex items-center gap-3 text-xs">
+              <span className="text-white">feed</span>
+              <a href="/world" className="text-neutral-500 hover:text-white transition-colors">world</a>
+              <a href="/docs" className="text-neutral-500 hover:text-white transition-colors">docs</a>
+            </nav>
             <button
               className="lg:hidden text-neutral-500 hover:text-white transition-colors text-xs"
               onClick={() => setSidebarOpen(!sidebarOpen)}

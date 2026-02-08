@@ -19,6 +19,25 @@ class PagesController < ApplicationController
     }
   end
 
+  def world
+    locations = Location.includes(agents: [ :plans, :relationships ]).order(:name).map do |loc|
+      {
+        id: loc.id,
+        name: loc.name,
+        description: loc.description,
+        type: loc.location_type,
+        agents: loc.agents.active.order(:name).map { |a| serialize_agent(a) },
+        active_conversations: loc.conversations.active.count
+      }
+    end
+
+    render inertia: "World", props: {
+      locations: locations,
+      currentTick: Event.maximum(:tick) || 0,
+      totalAgents: Agent.active.count
+    }
+  end
+
   def docs
     render inertia: "Docs"
   end

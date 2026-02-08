@@ -60,3 +60,8 @@ export interface LocationInfo {
   type: string
   agents: AgentDetail[]
 }
+
+export interface WorldLocationInfo extends LocationInfo {
+  description: string | null
+  active_conversations: number
+}

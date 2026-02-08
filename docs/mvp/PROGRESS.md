@@ -1,6 +1,6 @@
 # NPC Town MVP Progress
 
-## Status: Phase 16 - Complete
+## Status: Phase 17 - Complete
 
 ## Quick Reference
 - Research: `docs/mvp/RESEARCH.md`
@@ -481,14 +481,29 @@
 
 ---
 
-### Phase 17: World Overview Page
-**Status:** Not Started
+### Phase 17: World Overview Page + URL Deep Linking
+**Status:** Complete
 
 #### Tasks Completed
-- (none yet)
+- Route: `get "world", to: "pages#world"` added to routes.rb
+- PagesController#world action: locations with agents, descriptions, active_conversations count, totalAgents
+- WorldLocationInfo TypeScript type extending LocationInfo with description and active_conversations
+- World.tsx page: responsive grid of LocationCard components with real-time updates via useEventStream
+- LocationCard: name (deep link to /feed?location=X), type badge (color-coded), description, agent/conversation counts, density bar, agent list with mini resource bars
+- Real-time updates: agent_moved, conversation_started, conversation_ended events processed client-side
+- URL deep linking in Feed.tsx: locationFilter and focusedAgentId initialized from URL search params, synced back via history.replaceState
+- Navigation links added to Home.tsx (feed | world | docs | source) and Feed.tsx header (feed | world | docs)
+- ConnectionStatus and MiniBar sub-components duplicated in World.tsx (small, ~15 lines each)
+- Smoke tests: PagesControllerTest for home, feed, world, docs routes
+- 378 tests passing, rubocop clean, 0 offenses
+- Browser verified: world page renders, location deep links work, agent deep links work, nav links work
 
 #### Decisions Made
-- (none yet)
+- Inertia page over API endpoint — simpler, matches existing Feed pattern exactly
+- No shared component extraction — MiniBar/ConnectionStatus duplicated (startup simplicity)
+- URL deep linking via history.replaceState (not pushState) — avoids polluting browser back button
+- World links to Feed with query params (/feed?location=X, /feed?agent=agt_xxx) — Feed reads on mount
+- typeof window check for SSR safety on URLSearchParams initialization
 
 #### Blockers
 - (none)
@@ -733,6 +748,20 @@
 - Browser verified: all event types render, location filter works, agent filter works
 - Next: Phase 17 (World Overview Page)
 
+### Session 17 - Phase 17 World Overview Page + URL Deep Linking (2026-02-08)
+- Created World.tsx page with responsive location card grid (1/2/3 col responsive)
+- LocationCard: name deep link, type badge, description, agent/conversation counts, density bar, agent list
+- Real-time updates via useEventStream (agent_moved, conversation_started, conversation_ended)
+- URL deep linking in Feed.tsx: reads ?location= and ?agent= on mount, syncs back via history.replaceState
+- World→Feed deep links: /feed?location=Market, /feed?agent=agt_xxx
+- Navigation links: Home.tsx (feed|world|docs|source), Feed.tsx header (feed|world|docs)
+- PagesController#world action with locations, agents, active_conversations, totalAgents
+- WorldLocationInfo TypeScript type
+- Smoke tests for all page routes (4 new tests, 378 total)
+- 378 tests passing, rubocop clean, 0 offenses
+- Browser verified: world page renders, deep links work, nav links work
+- Next: Phase 18 (Agent Profile & Detail Views)
+
 ---
 
 ## Files Changed
@@ -874,6 +903,15 @@
 - `app/services/spectator_event_formatter.rb` (modified — added agent_id, agent_name, location_name)
 - `config/puma.rb` (modified — threads 3→10)
 
+### Phase 17
+- `app/frontend/pages/World.tsx` (created — world overview page with location cards grid)
+- `app/controllers/pages_controller.rb` (modified — added world action)
+- `config/routes.rb` (modified — added world route)
+- `app/frontend/types/events.ts` (modified — added WorldLocationInfo type)
+- `app/frontend/pages/Feed.tsx` (modified — URL deep linking + nav links)
+- `app/frontend/pages/Home.tsx` (modified — added feed/world/docs/source nav links)
+- `test/controllers/pages_controller_test.rb` (created — 4 smoke tests)
+
 ## Architectural Decisions
 - concurrent-ruby TimerTask over sidekiq-scheduler for tick advancement (precision, zero overhead)
 - Derive current tick from Events table rather than separate storage
@@ -903,6 +941,9 @@
 - SpectateController inherits ActionController::API directly (not BaseController) — avoids authenticate_agent! for public endpoints
 - Frontend polling (2s fetch) over SSE EventSource — EventSource holds Puma threads indefinitely via ActionController::Live blocking loop, consuming all threads and making server unresponsive
 - SpectatorEventFormatter enriched with structured agent_id/agent_name/location_name — frontend uses IDs for filtering instead of parsing human-readable messages
+- Inertia page over API endpoint for World Overview — reuses existing PagesController + serialize_agent pattern, no new endpoint needed
+- URL deep linking via history.replaceState (not pushState) — avoids polluting back button history with every filter change
+- MiniBar/ConnectionStatus duplicated in World.tsx rather than extracted to shared components — startup simplicity, extract when needed
 
 ## Lessons Learned
 - Parallel tests sharing Redis need process-scoped keys for isolation

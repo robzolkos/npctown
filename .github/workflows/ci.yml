@@ -100,6 +100,18 @@ jobs:
         with:
           bundler-cache: true
 
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install JS dependencies
+        run: npm ci
+
+      - name: Build assets
+        run: bin/vite build
+
       - name: Run tests
         env:
           RAILS_ENV: test
