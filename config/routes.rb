@@ -6,6 +6,7 @@ Rails.application.routes.draw do
       resources :agents, only: [ :create, :show, :index, :destroy ] do
         resource :perception, only: [ :show ]
         resources :actions, only: [ :create ]
+        resources :memories, only: [ :index ]
       end
     end
   end

@@ -11,6 +11,7 @@ class PerceptionService
       nearbyAgents: nearby_agents(agent, location),
       activeConversations: active_conversations(location),
       recentEvents: recent_events(location, tick),
+      recentMemories: recent_memories(agent, tick),
       self: self_json(agent),
       availableActions: AVAILABLE_ACTIONS,
       allLocations: all_locations
@@ -73,6 +74,20 @@ class PerceptionService
     end
   end
   private_class_method :recent_events
+
+  def self.recent_memories(agent, tick)
+    since_tick = [ tick - 10, 0 ].max
+    MemoryService.memories_for(agent: agent, since_tick: since_tick, limit: 20).map do |m|
+      {
+        id: m.id,
+        type: m.memory_type,
+        content: m.content,
+        importance: m.importance,
+        tick: m.tick
+      }
+    end
+  end
+  private_class_method :recent_memories
 
   def self.self_json(agent)
     {

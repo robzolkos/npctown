@@ -57,6 +57,7 @@ class Api::V1::PerceptionsControllerTest < ActionDispatch::IntegrationTest
     assert json.key?("nearbyAgents")
     assert json.key?("activeConversations")
     assert json.key?("recentEvents")
+    assert json.key?("recentMemories")
     assert json.key?("self")
     assert json.key?("availableActions")
     assert json.key?("allLocations")

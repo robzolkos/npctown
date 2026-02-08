@@ -5,5 +5,10 @@ Sidekiq.configure_server do |config|
 end
 
 Rails.application.config.after_initialize do
+  SimulationService.register_listener(MemoryService)
   SimulationService.register_listener(ConversationService)
+
+  unless Rails.env.test?
+    SimulationService.start
+  end
 end
