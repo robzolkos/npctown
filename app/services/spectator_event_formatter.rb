@@ -12,6 +12,9 @@ class SpectatorEventFormatter
       tick: event.tick,
       timestamp: event.created_at.iso8601,
       type: event.event_type,
+      agent_id: event.agent_id,
+      agent_name: event.agent&.name,
+      location_name: event.location&.name,
       message: human_message(event),
       details: event.payload || {}
     }
@@ -26,11 +29,15 @@ class SpectatorEventFormatter
     events.filter_map do |event|
       next unless spectator_visible?(event)
 
+      agent = agents[event.agent_id]
       {
         id: event.id,
         tick: event.tick,
         timestamp: event.created_at.iso8601,
         type: event.event_type,
+        agent_id: event.agent_id,
+        agent_name: agent&.name,
+        location_name: event.location&.name,
         message: human_message(event, agents: agents),
         details: event.payload || {}
       }

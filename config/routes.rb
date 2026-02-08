@@ -19,6 +19,7 @@ Rails.application.routes.draw do
     end
   end
 
+  get "feed", to: "pages#feed"
   get "docs", to: "pages#docs"
   root "pages#home"
 end

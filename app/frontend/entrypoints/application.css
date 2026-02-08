@@ -2,6 +2,13 @@
 
 @theme {
   --font-mono: "Geist Mono", monospace;
+
+  --color-npc-green: #46A759;
+  --color-npc-blue: #0070F3;
+  --color-npc-red: #DA3136;
+  --color-npc-purple: #8E4EC6;
+  --color-npc-orange: #FF990C;
+  --color-npc-pink: #F76191;
 }
 
 body {

@@ -1,6 +1,6 @@
 # NPC Town MVP Progress
 
-## Status: Phase 15 - Complete
+## Status: Phase 16 - Complete
 
 ## Quick Reference
 - Research: `docs/mvp/RESEARCH.md`
@@ -439,13 +439,42 @@
 ---
 
 ### Phase 16: Spectator UI — Feed/Timeline
-**Status:** Not Started
+**Status:** Complete
 
 #### Tasks Completed
-- (none yet)
+- Route (`GET /feed`) + PagesController#feed action with Inertia props (locations, currentTick)
+- "watch" link added to Home.tsx navigation
+- TypeScript types (`app/frontend/types/events.ts`): SpectatorEvent, LocationInfo, EventType
+- useEventStream hook: polling-based (2s interval) fetching `/api/v1/spectate/history`, dedup by ID, 500 event cap
+- useEventHistory hook: infinite scroll upward, fetches older events with `since_tick` pagination
+- Feed.tsx (~750 lines): dark cyberpunk terminal aesthetic, sidebar with locations/agents, filter tabs, agent filter pill
+- 13 event type renderers with distinct visual treatments:
+  - Speech: prominent with quoted text, green agent names
+  - Conversations: bordered start/end markers, indented messages
+  - Movement: compact single-line with arrow, muted color
+  - Emotes: italic with asterisks
+  - Relationships: highlighted cards with dimension badges (trust/affection/respect/familiarity arrows)
+  - Resources: compact inline with gain/loss coloring
+  - Plans: bordered cards with goal text, status-based styling
+- Auto-scroll behavior with "New events" floating button + count badge
+- Connection status indicator (pulsing green LIVE / amber RECONNECTING / red OFFLINE)
+- Empty state: "waiting for signs of life..." with blinking cursor
+- CSS animations: fadeSlideIn entrance + glowFade left-border accent
+- Sidebar: 3 locations with agent lists, clickable for filtering
+- Location filter tabs: All / Town Square / Market / Library (server-side filtering)
+- Agent filter: click agent name anywhere → filter pill + server-side `?agent=` param
+- SpectatorEventFormatter enriched with agent_id, agent_name, location_name fields
+- Puma threads increased from 3 to 10 (for SSE connection handling)
+- 374 tests passing, rubocop clean, TypeScript compiles clean
 
 #### Decisions Made
-- (none yet)
+- Polling over SSE EventSource: EventSource consumed Puma threads indefinitely (infinite loop with 1s sleep), blocking all server threads. Polling `/api/v1/spectate/history` every 2s is reliable and sufficient for 5s tick intervals.
+- All inline in Feed.tsx: no premature component extraction, keeps everything co-located for this phase
+- Agent filter uses agent_id (prefixed KSUID) not name — reliable, unique identifier
+- SpectatorEventFormatter enriched with structured fields (agent_id, agent_name, location_name) — frontend no longer parses human-readable messages
+- Puma threads 3→10 to handle SSE connections without blocking regular requests
+- getRelationshipLabel utility computes labels client-side from dimension values (stranger, acquaintance, close friend, nemesis, etc.)
+- useRelativeTime hook with 30s refresh interval for relative timestamps
 
 #### Blockers
 - (none)
@@ -691,6 +720,19 @@
 - 25 new tests (374 total), rubocop clean, 0 offenses
 - Next: Phase 16 (Spectator UI — Feed/Timeline)
 
+### Session 16 - Phase 16 Spectator UI Feed/Timeline (2026-02-08)
+- Built full spectator feed page at /feed with dark cyberpunk terminal aesthetic
+- Created TypeScript types, polling-based event stream hook, history loading hook
+- Feed.tsx with 13 event type renderers, each with distinct visual treatment
+- Sidebar with locations/agents, filter tabs, agent filter pill
+- Auto-scroll, "New events" button, connection status indicator, empty state
+- Initially tried SSE EventSource but it consumed all Puma threads — rewrote to polling
+- Enriched SpectatorEventFormatter with agent_id, agent_name, location_name for reliable filtering
+- Increased Puma threads 3→10
+- 374 tests passing, rubocop clean, TypeScript compiles clean
+- Browser verified: all event types render, location filter works, agent filter works
+- Next: Phase 17 (World Overview Page)
+
 ---
 
 ## Files Changed
@@ -821,6 +863,17 @@
 - `test/services/spectator_event_formatter_test.rb` (created — 16 tests)
 - `test/controllers/api/v1/spectate_controller_test.rb` (created — 9 tests)
 
+### Phase 16
+- `app/frontend/types/events.ts` (created — SpectatorEvent, LocationInfo, EventType types)
+- `app/frontend/hooks/useEventStream.ts` (created — polling-based event stream hook)
+- `app/frontend/hooks/useEventHistory.ts` (created — history loading hook for infinite scroll)
+- `app/frontend/pages/Feed.tsx` (created — full spectator feed page ~750 lines)
+- `app/frontend/pages/Home.tsx` (modified — added "watch" link)
+- `app/controllers/pages_controller.rb` (modified — added feed action with Inertia props)
+- `config/routes.rb` (modified — added feed route)
+- `app/services/spectator_event_formatter.rb` (modified — added agent_id, agent_name, location_name)
+- `config/puma.rb` (modified — threads 3→10)
+
 ## Architectural Decisions
 - concurrent-ruby TimerTask over sidekiq-scheduler for tick advancement (precision, zero overhead)
 - Derive current tick from Events table rather than separate storage
@@ -848,6 +901,8 @@
 - Stamina=0 guard separate from energy=0 exhaustion guard — different allowed action sets
 - Polling-based SSE (1s DB poll) over Redis pub/sub — simpler, no channel infrastructure, 1s latency fine for 5s tick
 - SpectateController inherits ActionController::API directly (not BaseController) — avoids authenticate_agent! for public endpoints
+- Frontend polling (2s fetch) over SSE EventSource — EventSource holds Puma threads indefinitely via ActionController::Live blocking loop, consuming all threads and making server unresponsive
+- SpectatorEventFormatter enriched with structured agent_id/agent_name/location_name — frontend uses IDs for filtering instead of parsing human-readable messages
 
 ## Lessons Learned
 - Parallel tests sharing Redis need process-scoped keys for isolation
@@ -855,3 +910,4 @@
 - DB schema already had left_at_tick/ended_at_tick columns — always check schema before planning migrations
 - PostgreSQL triggers defined in migrations don't carry into test DB via schema.rb — need to backfill tsvector in test setup
 - ts_rank returns very small values (0.03-0.1 range) — must normalize within candidate set for scoring weights to work meaningfully
+- ActionController::Live SSE endpoints with blocking loops (sleep in loop) consume Puma threads permanently — each browser tab/reconnect burns a thread. With default 3 threads, 3 SSE connections = completely unresponsive server. Polling is the safer approach for Puma.
