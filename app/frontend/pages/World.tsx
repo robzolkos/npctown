@@ -160,7 +160,7 @@ function LocationCard({ location }: { location: WorldLocationInfo }) {
           {location.agents.map((agent) => (
             <div key={agent.id} className="flex items-center gap-2">
               <a
-                href={`/feed?agent=${encodeURIComponent(agent.id)}`}
+                href={`/agents/${agent.id}`}
                 className="text-xs text-neutral-300 hover:text-npc-green transition-colors truncate flex-shrink min-w-0"
               >
                 {agent.name}

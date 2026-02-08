@@ -1,6 +1,6 @@
 # NPC Town MVP Progress
 
-## Status: Phase 17 - Complete
+## Status: Phase 18 - Complete
 
 ## Quick Reference
 - Research: `docs/mvp/RESEARCH.md`
@@ -511,13 +511,27 @@
 ---
 
 ### Phase 18: Agent Profile & Detail Views
-**Status:** Not Started
+**Status:** Complete
 
 #### Tasks Completed
-- (none yet)
+- Route: `get "agents/:id"` → PagesController#agent_profile
+- PagesController#agent_profile action with serialize_agent_profile, stamina_label helpers
+- Profile serializes: identity, approximate resource labels, relationships, reflections (last 10), stats, recent events (last 50)
+- AgentProfileData TypeScript type + AgentProfileReflection, AgentProfileStats
+- AgentProfile.tsx page: header, breadcrumb, name/status/location, description, traits/goals, condition badges, plan, relationships, reflections, stats grid, recent activity, feed link
+- World.tsx: agent name links now go to `/agents/:id` (was `/feed?agent=...`)
+- Feed.tsx: "full profile" link added to AgentDetailPanel header
+- Public resources use approximate labels via ResourceService.resource_description (not raw numbers)
+- 2 new tests (380 total), rubocop clean, 0 offenses
+- Browser verified: profile renders, World→profile nav, Feed detail→profile nav, profile→feed nav all work
 
 #### Decisions Made
-- (none yet)
+- Inertia page (not API endpoint) — matches Feed/World pattern
+- Approximate resources on public profile — uses ResourceService.resource_description labels + stamina_label helper
+- Reflections queried directly (not through auth-gated API) — public spectator-facing view
+- Keep Feed's inline AgentDetailPanel — add "full profile" link instead of replacing inline behavior
+- No SSE/real-time on profile — static server-rendered snapshot via Inertia props
+- Simple event rendering (message + timestamp) instead of full Feed event renderers — profile is for overview, feed is for live detail
 
 #### Blockers
 - (none)
@@ -762,6 +776,17 @@
 - Browser verified: world page renders, deep links work, nav links work
 - Next: Phase 18 (Agent Profile & Detail Views)
 
+### Session 18 - Phase 18 Agent Profile & Detail Views (2026-02-08)
+- Created AgentProfile.tsx page at /agents/:id with full agent profile
+- PagesController#agent_profile with serialize_agent_profile (approximate resources, reflections, stats)
+- AgentProfileData TypeScript type with reflections, stats, resource labels
+- Sections: identity, condition badges, plan, relationships (linking to other profiles), reflections, stats grid, recent activity
+- World.tsx agent links → /agents/:id (was /feed?agent=...)
+- Feed.tsx AgentDetailPanel: added "full profile" link
+- 2 new tests (380 total), rubocop clean, 0 offenses
+- Browser verified: all navigation paths work
+- Next: Phase 19 (Demo Agents)
+
 ---
 
 ## Files Changed
@@ -911,6 +936,15 @@
 - `app/frontend/pages/Feed.tsx` (modified — URL deep linking + nav links)
 - `app/frontend/pages/Home.tsx` (modified — added feed/world/docs/source nav links)
 - `test/controllers/pages_controller_test.rb` (created — 4 smoke tests)
+
+### Phase 18
+- `app/frontend/pages/AgentProfile.tsx` (created — agent profile page)
+- `app/controllers/pages_controller.rb` (modified — agent_profile action + serialize_agent_profile + stamina_label)
+- `config/routes.rb` (modified — added agents/:id route)
+- `app/frontend/types/events.ts` (modified — AgentProfileData, AgentProfileReflection, AgentProfileStats types)
+- `app/frontend/pages/World.tsx` (modified — agent links to /agents/:id)
+- `app/frontend/pages/Feed.tsx` (modified — "full profile" link in AgentDetailPanel)
+- `test/controllers/pages_controller_test.rb` (modified — 2 new tests)
 
 ## Architectural Decisions
 - concurrent-ruby TimerTask over sidekiq-scheduler for tick advancement (precision, zero overhead)

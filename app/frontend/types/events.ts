@@ -65,3 +65,39 @@ export interface WorldLocationInfo extends LocationInfo {
   description: string | null
   active_conversations: number
 }
+
+export interface AgentProfileReflection {
+  id: string
+  content: string
+  importance: number
+  tick: number
+}
+
+export interface AgentProfileStats {
+  total_events: number
+  total_conversations: number
+  total_memories: number
+  relationship_count: number
+  registered_at_tick: number | null
+}
+
+export interface AgentProfileData {
+  id: string
+  name: string
+  description: string | null
+  personality_traits: string[]
+  goals: string[]
+  status: string
+  location_name: string | null
+  location_id: string | null
+  resource_labels: string[]
+  stamina_label: string
+  current_plan: {
+    goal: string
+    steps: { description: string; done: boolean }[]
+    status: string
+  } | null
+  relationships: AgentRelationship[]
+  reflections: AgentProfileReflection[]
+  stats: AgentProfileStats
+}

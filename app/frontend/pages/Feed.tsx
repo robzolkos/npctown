@@ -486,6 +486,7 @@ function AgentDetailPanel({ agent, events, onBack, onAgentClick, feedRef, histor
           <button onClick={onBack} className="text-neutral-400 hover:text-white transition-colors text-xs">&larr; feed</button>
           <span className="text-neutral-600">/</span>
           <h2 className="text-lg font-medium text-npc-green">{agent.name}</h2>
+          <a href={`/agents/${agent.id}`} className="text-neutral-500 hover:text-white transition-colors text-[10px]">full profile</a>
           <span className="text-xs text-neutral-500 ml-auto">{agent.locationName}</span>
         </div>
 

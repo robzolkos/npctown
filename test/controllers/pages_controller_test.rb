@@ -20,4 +20,14 @@ class PagesControllerTest < ActionDispatch::IntegrationTest
     get docs_url
     assert_response :ok
   end
+
+  test "agent profile page renders successfully" do
+    get agent_profile_url(id: agents(:alice).id)
+    assert_response :ok
+  end
+
+  test "agent profile page returns 404 for unknown agent" do
+    get agent_profile_url(id: "agt_nonexistent000000000000000")
+    assert_response :not_found
+  end
 end

@@ -22,5 +22,6 @@ Rails.application.routes.draw do
   get "feed", to: "pages#feed"
   get "world", to: "pages#world"
   get "docs", to: "pages#docs"
+  get "agents/:id", to: "pages#agent_profile", as: :agent_profile
   root "pages#home"
 end
