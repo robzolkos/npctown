@@ -7,3 +7,13 @@ alice_knows_bob:
   respect: 25
   familiarity: 40
   last_interaction_tick: 10
+
+bob_knows_alice:
+  id: "rel_39MFjRsNHFJMjCEmkTui9nmsXYZ"
+  agent_id: "agt_39MFjRx3lyGEj8GlxA3Ot9oONhV"
+  target_agent_id: "agt_39MFjUlSSNoN54PqzcpjpHAprj1"
+  trust: 15
+  affection: 10
+  respect: 20
+  familiarity: 35
+  last_interaction_tick: 10

@@ -5,7 +5,7 @@ class PerceptionServiceTest < ActiveSupport::TestCase
     result = PerceptionService.build(agents(:alice))
 
     assert_kind_of Hash, result
-    %i[tick location nearbyAgents activeConversations recentEvents recentMemories relevantMemories recentReflections unreflectedObservations self availableActions allLocations].each do |key|
+    %i[tick location nearbyAgents activeConversations recentEvents recentMemories relevantMemories recentReflections unreflectedObservations relationships self availableActions allLocations].each do |key|
       assert result.key?(key), "Missing key: #{key}"
     end
   end
@@ -149,6 +149,27 @@ class PerceptionServiceTest < ActiveSupport::TestCase
     assert_not_nil town_square
     assert town_square.key?(:agentCount)
     assert town_square.key?(:description)
+  end
+
+  test "relationships includes non-stranger relationships" do
+    # alice_knows_bob fixture has familiarity 40 (above 10 threshold)
+    result = PerceptionService.build(agents(:alice))
+
+    assert_kind_of Array, result[:relationships]
+    assert result[:relationships].any? { |r| r[:targetAgentId] == agents(:bob).id }
+  end
+
+  test "relationships excludes strangers" do
+    alice = agents(:alice)
+    charlie = agents(:charlie)
+
+    # Create a low-familiarity relationship
+    Relationship.where(agent: alice, target_agent: charlie).delete_all
+    Relationship.create!(agent: alice, target_agent: charlie, familiarity: 5)
+
+    result = PerceptionService.build(alice)
+
+    assert_not result[:relationships].any? { |r| r[:targetAgentId] == charlie.id }
   end
 
   test "activeConversations includes conversations at agent's location" do

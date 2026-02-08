@@ -32,6 +32,8 @@ class ConversationService
       }
     )
 
+    RelationshipService.on_conversation_started(initiator: initiator, target_agent: target_agent, tick: tick)
+
     conversation
   end
 
@@ -51,6 +53,9 @@ class ConversationService
         message: content
       }
     )
+
+    others = conversation.conversation_participants.active.where.not(agent: agent).includes(:agent).map(&:agent)
+    RelationshipService.on_conversation_message(speaker: agent, other_participants: others, tick: tick)
 
     msg
   end
@@ -74,6 +79,11 @@ class ConversationService
         system: true
       }
     )
+
+    others = conversation.conversation_participants.active.where.not(agent: agent).includes(:agent).map(&:agent)
+    others.each do |other|
+      RelationshipService.on_conversation_started(initiator: agent, target_agent: other, tick: tick)
+    end
 
     conversation
   end

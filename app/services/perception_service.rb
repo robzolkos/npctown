@@ -17,6 +17,7 @@ class PerceptionService
       recentReflections: recent_reflections(agent),
       unreflectedObservations: unreflected_observations(agent),
       currentPlan: current_plan(agent),
+      relationships: agent_relationships(agent),
       self: self_json(agent),
       availableActions: available_actions(agent),
       allLocations: all_locations
@@ -153,6 +154,21 @@ class PerceptionService
     actions
   end
   private_class_method :available_actions
+
+  def self.agent_relationships(agent)
+    agent.relationships.includes(:target_agent).where("familiarity >= ?", 10).map do |r|
+      {
+        targetAgentId: r.target_agent_id,
+        targetAgentName: r.target_agent.name,
+        trust: r.trust,
+        affection: r.affection,
+        respect: r.respect,
+        familiarity: r.familiarity,
+        label: r.label
+      }
+    end
+  end
+  private_class_method :agent_relationships
 
   def self.self_json(agent)
     {

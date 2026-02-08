@@ -9,6 +9,7 @@ Rails.application.routes.draw do
         resources :actions, only: [ :create ]
         resources :memories, only: [ :index ]
         resources :reflections, only: [ :index ]
+        resources :relationships, only: [ :index ]
       end
     end
   end

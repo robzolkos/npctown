@@ -1,6 +1,6 @@
 # NPC Town MVP Progress
 
-## Status: Phase 11 - Complete
+## Status: Phase 12 - Complete
 
 ## Quick Reference
 - Research: `docs/mvp/RESEARCH.md`
@@ -317,13 +317,28 @@
 ---
 
 ### Phase 12: Relationship Tracking
-**Status:** Not Started
+**Status:** Complete
 
 #### Tasks Completed
-- (none yet)
+- RelationshipService with find_or_create, on_conversation_started, on_conversation_message, relationships_for
+- Inline relationship updates (not tick-based) — lightweight DB writes on each conversation interaction
+- Bidirectional updates: A→B and B→A both updated on every interaction
+- Auto-creation of relationships on first interaction (defaults all 0)
+- Dimension clamping: trust/affection/respect (-100..100), familiarity (0..100)
+- ConversationService hooks: start_conversation (+3 familiarity, +1 trust), add_message (+1 familiarity, +1 trust), join_conversation (+3 familiarity, +1 trust with each existing participant)
+- relationship_changed event emission with full payload (target_agent_id, name, all dimensions, label)
+- GET /api/v1/agents/:agent_id/relationships endpoint (auth required, self-only)
+- PerceptionService: relationships key with non-stranger filtering (familiarity >= 10)
+- bob_knows_alice fixture for bidirectional test coverage
+- 16 new tests (304 total), rubocop clean, 0 offenses
 
 #### Decisions Made
-- (none yet)
+- Inline updates (not tick-based/async) — relationship changes are simple DB writes, no batch processing needed
+- Hook in ConversationService (not ActionService) — closer to interaction logic, works for any future code path
+- Only conversations update relationships — speak/emote are broadcast with no clear target
+- Only trust and familiarity change for MVP — affection/respect need richer interaction types
+- No decay mechanics — future phase concern
+- No negative interactions — no action types exist for negativity yet
 
 #### Blockers
 - (none)
@@ -585,6 +600,15 @@
 - 39 new tests (288 total), rubocop clean, 0 offenses
 - Next: Phase 12 (Relationship Tracking)
 
+### Session 12 - Phase 12 Relationship Tracking (2026-02-08)
+- Created RelationshipService with inline bidirectional updates on conversation interactions
+- Hooked into ConversationService (start_conversation, add_message, join_conversation)
+- Created RelationshipsController with GET index endpoint (auth, self-only)
+- Added relationships to PerceptionService (non-stranger filter, familiarity >= 10)
+- relationship_changed events emitted with full dimension payload + label
+- 16 new tests (304 total), rubocop clean, 0 offenses
+- Next: Phase 13 (Resource System)
+
 ---
 
 ## Files Changed
@@ -666,6 +690,17 @@
 - `test/controllers/api/v1/plans_controller_test.rb` (created — 10 tests)
 - `test/models/event_test.rb` (modified — updated TYPES count + plan type assertions)
 
+### Phase 12
+- `app/services/relationship_service.rb` (created — find_or_create, update, event emission)
+- `app/services/conversation_service.rb` (modified — 3 RelationshipService hooks)
+- `app/controllers/api/v1/relationships_controller.rb` (created — GET index endpoint)
+- `config/routes.rb` (modified — added relationships route)
+- `app/services/perception_service.rb` (modified — relationships key in perception)
+- `test/services/relationship_service_test.rb` (created — 10 tests)
+- `test/controllers/api/v1/relationships_controller_test.rb` (created — 4 tests)
+- `test/services/perception_service_test.rb` (modified — 2 new tests + updated top-level keys check)
+- `test/fixtures/relationships.yml` (modified — added bob_knows_alice)
+
 ## Architectural Decisions
 - concurrent-ruby TimerTask over sidekiq-scheduler for tick advancement (precision, zero overhead)
 - Derive current tick from Events table rather than separate storage
@@ -679,6 +714,8 @@
 - PostgreSQL full-text search (tsvector/ts_rank) over vector embeddings for memory retrieval — zero external cost, scales with database
 - Normalized relevance scoring: ts_rank values divided by max in candidate set to ensure 0-1 scale matching recency/importance
 - Hybrid reflection: agent-driven (importance 9) + platform fallback (importance 7) — agents bring their own compute, platform catches stragglers
+- Inline relationship updates (not tick-based) — lightweight DB writes, no batch processing needed
+- ConversationService hooks (not ActionService) — closer to interaction logic, reusable across code paths
 - `reflected_upon` flag coordinates both paths: agent reflects → marks observed, platform skips already-reflected
 - Platform fallback uses simple template patterns (no LLM) — location frequency + agent interaction frequency
 
