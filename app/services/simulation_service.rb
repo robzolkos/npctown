@@ -2,19 +2,26 @@ class SimulationService
   class SimulationError < StandardError; end
 
   REDIS_STATE_KEY = "npctown:simulation:state"
+  TICK_LOCK_KEY = "npctown:tick_lock"
+  TICK_LOCK_TTL = 4
   DEFAULT_STATE = "stopped"
 
   # --- Tick listeners registry ---
 
   @listeners = []
   @redis_state_key = nil
+  @tick_lock_key = nil
 
   class << self
     attr_reader :listeners
-    attr_writer :redis_state_key
+    attr_writer :redis_state_key, :tick_lock_key
 
     def redis_state_key
       @redis_state_key || REDIS_STATE_KEY
+    end
+
+    def tick_lock_key
+      @tick_lock_key || TICK_LOCK_KEY
     end
   end
 
@@ -46,12 +53,10 @@ class SimulationService
 
   def self.start
     set_state("running")
-    start_timer
   end
 
   def self.stop
     set_state("stopped")
-    stop_timer
   end
 
   def self.pause
@@ -75,6 +80,10 @@ class SimulationService
   def self.tick!
     return unless running?
 
+    # Only one tick per interval, safe across any number of processes
+    lock_acquired = Sidekiq.redis { |c| c.set(tick_lock_key, "1", nx: true, ex: TICK_LOCK_TTL) }
+    return unless lock_acquired
+
     new_tick = current_tick + 1
 
     EventService.append(
@@ -86,29 +95,6 @@ class SimulationService
     notify_listeners(new_tick)
 
     new_tick
-  end
-
-  # --- Timer management ---
-
-  def self.start_timer
-    stop_timer
-
-    interval = ENV.fetch("TICK_INTERVAL", 5).to_f
-    @timer_task = Concurrent::TimerTask.new(execution_interval: interval) do
-      tick!
-    rescue => e
-      Rails.logger.error("[SimulationService] Tick failed: #{e.message}")
-    end
-    @timer_task.execute
-  end
-
-  def self.stop_timer
-    @timer_task&.shutdown
-    @timer_task = nil
-  end
-
-  def self.timer_running?
-    @timer_task&.running? || false
   end
 
   # --- Private ---

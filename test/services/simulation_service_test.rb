@@ -3,16 +3,18 @@ require "test_helper"
 class SimulationServiceTest < ActiveSupport::TestCase
   setup do
     SimulationService.clear_listeners
-    SimulationService.stop_timer
-    # Scope Redis key per process to avoid parallel test pollution
+    # Scope Redis keys per process to avoid parallel test pollution
     SimulationService.redis_state_key = "npctown:simulation:state:test:#{Process.pid}"
+    SimulationService.tick_lock_key = "npctown:tick_lock:test:#{Process.pid}"
     Sidekiq.redis { |conn| conn.del(SimulationService.redis_state_key) }
+    Sidekiq.redis { |conn| conn.del(SimulationService.tick_lock_key) }
   end
 
   teardown do
-    SimulationService.stop_timer
     Sidekiq.redis { |conn| conn.del(SimulationService.redis_state_key) }
+    Sidekiq.redis { |conn| conn.del(SimulationService.tick_lock_key) }
     SimulationService.redis_state_key = nil
+    SimulationService.tick_lock_key = nil
   end
 
   # --- State management ---
@@ -103,12 +105,22 @@ class SimulationServiceTest < ActiveSupport::TestCase
     SimulationService.start
 
     t1 = SimulationService.tick!
+    Sidekiq.redis { |conn| conn.del(SimulationService.tick_lock_key) }
     t2 = SimulationService.tick!
+    Sidekiq.redis { |conn| conn.del(SimulationService.tick_lock_key) }
     t3 = SimulationService.tick!
 
     assert_equal 2, t1
     assert_equal 3, t2
     assert_equal 4, t3
+  end
+
+  test "tick! is guarded by SETNX lock" do
+    SimulationService.start
+
+    assert_equal 2, SimulationService.tick!
+    # Second tick blocked by lock
+    assert_nil SimulationService.tick!
   end
 
   # --- Listeners ---
@@ -146,36 +158,5 @@ class SimulationServiceTest < ActiveSupport::TestCase
     SimulationService.register_listener(listener)
 
     assert_equal 1, SimulationService.listeners.count
-  end
-
-  # --- Timer management ---
-
-  test "start creates a running timer" do
-    SimulationService.start
-    assert SimulationService.timer_running?
-  end
-
-  test "stop shuts down the timer" do
-    SimulationService.start
-    assert SimulationService.timer_running?
-
-    SimulationService.stop
-    assert_not SimulationService.timer_running?
-  end
-
-  test "timer fires tick! automatically" do
-    SimulationService.start
-    initial_tick = SimulationService.current_tick
-
-    # Replace timer with a fast one
-    SimulationService.stop_timer
-    task = Concurrent::TimerTask.new(execution_interval: 0.1) do
-      SimulationService.tick!
-    end
-    task.execute
-    sleep 0.8
-    task.shutdown
-
-    assert SimulationService.current_tick > initial_tick, "Timer should have advanced the tick"
   end
 end

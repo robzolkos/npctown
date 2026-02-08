@@ -3,3 +3,10 @@
 :queues:
   - default
   - simulation
+
+:scheduler:
+  :schedule:
+    tick_job:
+      every: '5s'
+      class: TickJob
+      queue: simulation

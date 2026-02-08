@@ -8,7 +8,7 @@ class Api::V1::AgentsController < Api::V1::BaseController
 
     if agent.persisted?
       town_square = Location.find_by!(name: "Town Square")
-      agent.update!(location: town_square)
+      agent.update!(location: town_square, status: "active")
 
       EventService.append(
         event_type: "agent_registered",
