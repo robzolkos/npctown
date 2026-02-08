@@ -40,7 +40,8 @@ class PerceptionService
         name: a.name,
         description: a.description,
         personalityTraits: a.personality_traits,
-        status: a.status
+        status: a.status,
+        resourceStatus: ResourceService.resource_description(a)
       }
     end
   end
@@ -151,6 +152,9 @@ class PerceptionService
   def self.available_actions(agent)
     actions = BASE_ACTIONS.dup
     actions << "reflect" if agent.memories.observations.unreflected.count >= REFLECT_THRESHOLD
+    actions << "rest"
+    actions << "eat" if agent.food >= ResourceService::EAT_FOOD_COST
+    actions << "trade"
     actions
   end
   private_class_method :available_actions

@@ -49,7 +49,7 @@ class PerceptionServiceTest < ActiveSupport::TestCase
     assert_not_includes ids, agents(:bob).id
   end
 
-  test "nearbyAgents contains expected fields" do
+  test "nearbyAgents contains expected fields including resourceStatus" do
     agents(:bob).update!(location: locations(:town_square))
 
     result = PerceptionService.build(agents(:alice))
@@ -60,6 +60,9 @@ class PerceptionServiceTest < ActiveSupport::TestCase
     assert nearby.key?(:description)
     assert nearby.key?(:personalityTraits)
     assert nearby.key?(:status)
+    assert nearby.key?(:resourceStatus)
+    assert_kind_of Array, nearby[:resourceStatus]
+    assert_equal 3, nearby[:resourceStatus].length
   end
 
   test "recentEvents scoped to agent's location" do
@@ -94,13 +97,26 @@ class PerceptionServiceTest < ActiveSupport::TestCase
     assert_equal agents(:alice).status, self_data[:status]
   end
 
-  test "availableActions returns base actions" do
+  test "availableActions returns base actions plus resource actions" do
     result = PerceptionService.build(agents(:alice))
-    base = %w[move speak emote wait startConversation joinConversation leaveConversation conversationMessage]
+    expected = %w[move speak emote wait startConversation joinConversation leaveConversation conversationMessage rest trade]
 
-    base.each do |action|
+    expected.each do |action|
       assert_includes result[:availableActions], action
     end
+  end
+
+  test "availableActions includes eat when agent has enough food" do
+    alice = agents(:alice) # food: 50 (>= 20)
+    result = PerceptionService.build(alice)
+    assert_includes result[:availableActions], "eat"
+  end
+
+  test "availableActions excludes eat when agent has insufficient food" do
+    alice = agents(:alice)
+    alice.update_column(:food, 10)
+    result = PerceptionService.build(alice)
+    assert_not_includes result[:availableActions], "eat"
   end
 
   test "availableActions includes reflect when enough unreflected observations" do

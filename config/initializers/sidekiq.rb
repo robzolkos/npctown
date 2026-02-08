@@ -11,6 +11,7 @@ Sidekiq.configure_server do |config|
     SimulationService.register_listener(StaminaService)
     SimulationService.register_listener(ReflectionService)
     SimulationService.register_listener(PlanService)
+    SimulationService.register_listener(ResourceService)
   end
 
   config.on(:shutdown) do

@@ -1,7 +1,7 @@
 class ActionService
   class ActionError < StandardError; end
 
-  ACTION_TYPES = %w[move speak emote wait startConversation joinConversation leaveConversation conversationMessage reflect].freeze
+  ACTION_TYPES = %w[move speak emote wait startConversation joinConversation leaveConversation conversationMessage reflect rest eat trade].freeze
 
   STAMINA_COSTS = {
     "move" => 5,
@@ -12,7 +12,10 @@ class ActionService
     "joinConversation" => 1,
     "leaveConversation" => 0,
     "conversationMessage" => 1,
-    "reflect" => 0
+    "reflect" => 0,
+    "rest" => 2,
+    "eat" => 1,
+    "trade" => 1
   }.freeze
 
   def self.execute(agent:, action_type:, params: {})
@@ -34,6 +37,9 @@ class ActionService
       when "leaveConversation"    then execute_leave_conversation(agent, params, tick)
       when "conversationMessage"  then execute_conversation_message(agent, params, tick)
       when "reflect"              then execute_reflect(agent, params, tick)
+      when "rest"                 then execute_rest(agent, params, tick)
+      when "eat"                  then execute_eat(agent, params, tick)
+      when "trade"                then execute_trade(agent, params, tick)
       end
 
       { success: true, tick: tick, event: event&.as_json }
@@ -46,6 +52,10 @@ class ActionService
 
     cost = STAMINA_COSTS[action_type]
     raise ActionError, "Insufficient stamina" if agent.stamina < cost
+
+    if agent.energy == 0 && !%w[wait move rest eat].include?(action_type)
+      raise ActionError, "Agent is exhausted (energy=0) and can only wait, move, rest, or eat"
+    end
 
     case action_type
     when "move"
@@ -66,6 +76,10 @@ class ActionService
       raise ActionError, "message is required" unless params[:message].present?
     when "reflect"
       raise ActionError, "content is required" unless params[:content].present?
+    when "trade"
+      raise ActionError, "targetAgentId is required" unless params[:target_agent_id].present?
+      raise ActionError, "resource is required" unless params[:resource].present?
+      raise ActionError, "amount is required" unless params[:amount].present?
     end
   end
   private_class_method :validate!
@@ -193,4 +207,31 @@ class ActionService
     )
   end
   private_class_method :execute_reflect
+
+  def self.execute_rest(agent, _params, tick)
+    ResourceService.rest(agent: agent, tick: tick)
+    Event.where(event_type: "resource_changed", agent: agent).order(created_at: :desc).first
+  end
+  private_class_method :execute_rest
+
+  def self.execute_eat(agent, _params, tick)
+    ResourceService.eat(agent: agent, tick: tick)
+    Event.where(event_type: "resource_changed", agent: agent).order(created_at: :desc).first
+  end
+  private_class_method :execute_eat
+
+  def self.execute_trade(agent, params, tick)
+    target = Agent.find_by_prefixed_id(params[:target_agent_id])
+    raise ActionError, "Target agent not found" unless target
+
+    ResourceService.trade(
+      agent: agent,
+      target: target,
+      resource: params[:resource],
+      amount: params[:amount].to_i,
+      tick: tick
+    )
+    Event.where(event_type: "resource_changed", agent: agent).order(created_at: :desc).first
+  end
+  private_class_method :execute_trade
 end

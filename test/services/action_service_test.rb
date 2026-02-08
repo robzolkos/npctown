@@ -340,4 +340,102 @@ class ActionServiceTest < ActiveSupport::TestCase
 
     assert_equal "ended", conversation.reload.status
   end
+
+  # --- Rest ---
+
+  test "rest restores energy and deducts 2 stamina" do
+    alice = agents(:alice)
+    alice.update_column(:energy, 50)
+
+    result = ActionService.execute(agent: alice, action_type: "rest")
+
+    assert result[:success]
+    assert_equal 98, alice.reload.stamina
+    assert_equal 80, alice.energy
+  end
+
+  # --- Eat ---
+
+  test "eat consumes food, restores energy, deducts 1 stamina" do
+    alice = agents(:alice)
+    alice.update_columns(food: 50, energy: 30)
+
+    result = ActionService.execute(agent: alice, action_type: "eat")
+
+    assert result[:success]
+    assert_equal 99, alice.reload.stamina
+    assert_equal 30, alice.food
+    assert_equal 70, alice.energy
+  end
+
+  test "eat raises when insufficient food" do
+    alice = agents(:alice)
+    alice.update_column(:food, 5)
+
+    assert_raises(ActionService::ActionError) do
+      ActionService.execute(agent: alice, action_type: "eat")
+    end
+  end
+
+  # --- Trade ---
+
+  test "trade transfers resource and deducts 1 stamina" do
+    alice = agents(:alice)
+    charlie = agents(:charlie)
+
+    result = ActionService.execute(
+      agent: alice,
+      action_type: "trade",
+      params: { target_agent_id: charlie.id, resource: "currency", amount: "25" }
+    )
+
+    assert result[:success]
+    assert_equal 99, alice.reload.stamina
+    assert_equal 75, alice.currency
+    assert_equal 125, charlie.reload.currency
+  end
+
+  test "trade raises for missing params" do
+    assert_raises(ActionService::ActionError) do
+      ActionService.execute(agent: agents(:alice), action_type: "trade", params: {})
+    end
+  end
+
+  # --- Exhaustion ---
+
+  test "exhausted agent cannot speak" do
+    alice = agents(:alice)
+    alice.update_column(:energy, 0)
+
+    error = assert_raises(ActionService::ActionError) do
+      ActionService.execute(agent: alice, action_type: "speak", params: { message: "Hi" })
+    end
+    assert_match(/exhausted/, error.message)
+  end
+
+  test "exhausted agent can still wait" do
+    alice = agents(:alice)
+    alice.update_column(:energy, 0)
+
+    result = ActionService.execute(agent: alice, action_type: "wait")
+    assert result[:success]
+  end
+
+  test "exhausted agent can still rest" do
+    alice = agents(:alice)
+    alice.update_columns(energy: 0, stamina: 10)
+
+    result = ActionService.execute(agent: alice, action_type: "rest")
+    assert result[:success]
+    assert_equal 30, alice.reload.energy
+  end
+
+  test "exhausted agent can still eat" do
+    alice = agents(:alice)
+    alice.update_columns(energy: 0, food: 50, stamina: 10)
+
+    result = ActionService.execute(agent: alice, action_type: "eat")
+    assert result[:success]
+    assert_equal 40, alice.reload.energy
+  end
 end

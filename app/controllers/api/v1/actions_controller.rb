@@ -25,7 +25,9 @@ class Api::V1::ActionsController < Api::V1::BaseController
       description: params[:description],
       target_agent_id: params[:targetAgentId],
       conversation_id: params[:conversationId],
-      content: params[:content]
+      content: params[:content],
+      resource: params[:resource],
+      amount: params[:amount]
     }
   end
 end

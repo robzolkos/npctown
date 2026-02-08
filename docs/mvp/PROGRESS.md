@@ -1,6 +1,6 @@
 # NPC Town MVP Progress
 
-## Status: Phase 12 - Complete
+## Status: Phase 13 - Complete
 
 ## Quick Reference
 - Research: `docs/mvp/RESEARCH.md`
@@ -346,13 +346,29 @@
 ---
 
 ### Phase 13: Resource System
-**Status:** Not Started
+**Status:** Complete
 
 #### Tasks Completed
-- (none yet)
+- ResourceService with tick listener pattern: energy decay (-1/10 ticks), food decay (-1/20 ticks), starvation double decay (energy -2 when food=0)
+- Market bonus: +10 food, +10 currency every 720 ticks for agents at commerce locations
+- Rest action: restores 30 energy (cap 100), costs 2 stamina
+- Eat action: consumes 20 food, restores 40 energy (cap 100), costs 1 stamina
+- Trade action: instant resource transfer to co-located agent, max 50 per trade, costs 1 stamina
+- Exhaustion guard: energy=0 restricts agent to wait/move/rest/eat only
+- Resource labels in perception: nearbyAgents includes resourceStatus array (e.g. ["hungry", "tired", "wealthy"])
+- PerceptionService: rest always available, eat when food >= 20, trade always available
+- MemoryService: reason-specific descriptions for resource_changed events (rest, eat, trade, market_bonus, exhausted, starving)
+- ResourceService registered as SimulationService tick listener
+- ActionsController: resource/amount params for trade
+- API docs (Docs.tsx): 3 new action types, resourceStatus in perception, exhaustion/market notes
+- 35 new tests (339 total), rubocop clean, 0 offenses
 
 #### Decisions Made
-- (none yet)
+- Instant trade (no proposal/acceptance flow) — simpler for MVP, agents can just give resources
+- Exhaustion enforced in ActionService.validate!, not a separate agent status
+- Decay inline in tick listener (like StaminaService), not async via Sidekiq job
+- Events only on thresholds (energy/food hitting 0), not every decay tick — reduces event noise
+- Market bonus every 720 ticks (~1 hour at 5s ticks) using Location.by_type("commerce")
 
 #### Blockers
 - (none)
@@ -609,6 +625,16 @@
 - 16 new tests (304 total), rubocop clean, 0 offenses
 - Next: Phase 13 (Resource System)
 
+### Session 13 - Phase 13 Resource System (2026-02-08)
+- Created ResourceService with tick listener: energy/food decay, starvation double decay, market bonus
+- 3 new action types: rest (2 stamina), eat (1 stamina), trade (1 stamina)
+- Exhaustion guard in ActionService (energy=0 blocks most actions)
+- Resource labels in perception (resourceStatus: ["fed", "energetic", "comfortable"])
+- MemoryService: reason-specific descriptions for resource_changed events
+- API docs updated with new actions, perception fields, exhaustion/market notes
+- 35 new tests (339 total), rubocop clean, 0 offenses
+- Next: Phase 14 (Stamina & Rate Limiting)
+
 ---
 
 ## Files Changed
@@ -701,6 +727,18 @@
 - `test/services/perception_service_test.rb` (modified — 2 new tests + updated top-level keys check)
 - `test/fixtures/relationships.yml` (modified — added bob_knows_alice)
 
+### Phase 13
+- `app/services/resource_service.rb` (created — decay, market bonus, rest, eat, trade, labels)
+- `app/services/action_service.rb` (modified — rest/eat/trade action types, exhaustion guard)
+- `app/controllers/api/v1/actions_controller.rb` (modified — resource/amount params)
+- `config/initializers/sidekiq.rb` (modified — registered ResourceService listener)
+- `app/services/memory_service.rb` (modified — reason-specific resource_changed descriptions)
+- `app/services/perception_service.rb` (modified — resourceStatus, rest/eat/trade in availableActions)
+- `app/frontend/pages/Docs.tsx` (modified — 3 new action types, resourceStatus, exhaustion/market notes)
+- `test/services/resource_service_test.rb` (created — 24 tests)
+- `test/services/action_service_test.rb` (modified — rest/eat/trade/exhaustion tests)
+- `test/services/perception_service_test.rb` (modified — resourceStatus, availableActions updates)
+
 ## Architectural Decisions
 - concurrent-ruby TimerTask over sidekiq-scheduler for tick advancement (precision, zero overhead)
 - Derive current tick from Events table rather than separate storage
@@ -718,6 +756,10 @@
 - ConversationService hooks (not ActionService) — closer to interaction logic, reusable across code paths
 - `reflected_upon` flag coordinates both paths: agent reflects → marks observed, platform skips already-reflected
 - Platform fallback uses simple template patterns (no LLM) — location frequency + agent interaction frequency
+- Instant trade (no proposal/acceptance) — simpler for MVP, agents can just give resources to co-located agents
+- Exhaustion enforced in ActionService.validate! (not a separate agent status) — energy=0 restricts to wait/move/rest/eat
+- Resource decay inline in tick listener, events only on thresholds (energy/food hitting 0) to reduce noise
+- Market bonus every 720 ticks using Location.by_type("commerce")
 
 ## Lessons Learned
 - Parallel tests sharing Redis need process-scoped keys for isolation

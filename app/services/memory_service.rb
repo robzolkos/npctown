@@ -213,7 +213,25 @@ class MemoryService
     when "relationship_changed"
       "#{agent_name}'s relationship changed"
     when "resource_changed"
-      "#{agent_name}'s resources changed"
+      reason = payload["reason"]
+      case reason
+      when "rest"
+        "#{agent_name} rested and recovered energy"
+      when "eat"
+        "#{agent_name} ate some food"
+      when "trade"
+        target = agent_cache[payload["target_agent_id"]]
+        target_name = target&.name || "someone"
+        "#{agent_name} traded #{payload['amount']} #{payload['resource']} with #{target_name}"
+      when "market_bonus"
+        "#{agent_name} earned resources from the Market"
+      when "exhausted"
+        "#{agent_name} collapsed from exhaustion"
+      when "starving"
+        "#{agent_name} is starving"
+      else
+        "#{agent_name}'s resources changed"
+      end
     when "stamina_changed"
       if event.agent_id == observer.id
         "You spent energy (stamina: #{payload['previous']} -> #{payload['current']})"
