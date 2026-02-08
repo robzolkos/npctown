@@ -1,6 +1,6 @@
 # NPC Town MVP Progress
 
-## Status: Phase 8 - Complete
+## Status: Phase 9 - Complete
 
 ## Quick Reference
 - Research: `docs/mvp/RESEARCH.md`
@@ -220,13 +220,28 @@
 ---
 
 ### Phase 9: Memory Retrieval
-**Status:** Not Started
+**Status:** Complete
 
 #### Tasks Completed
-- (none yet)
+- Migration: added `search_vector` tsvector column with GIN index + database trigger for auto-population
+- MemoryRetrievalService with `get_relevant_memories(agent:, query:, limit:, weights:)`
+- Combined scoring: recency (exponential decay) + importance (normalized 1-10) + relevance (PostgreSQL full-text search via ts_rank)
+- Relevance scores normalized to 0-1 within candidate set so weights work as intended
+- Default weights: recency 0.3, importance 0.3, relevance 0.4
+- Helper queries: `get_recent_memories`, `get_memories_about_agent`, `get_memories_at_location`
+- PerceptionService updated with `relevantMemories` (top 5 context-relevant memories)
+- Context query built from current location name + nearby agent names
+- API docs page (`/docs`) updated with `relevantMemories` in perception response example + note
+- Additional test fixtures for diverse memory content (market/trading, library/books)
+- 15 new tests (224 total), rubocop clean, 0 offenses
 
 #### Decisions Made
-- (none yet)
+- PostgreSQL full-text search over embeddings/pgvector — zero external cost at any scale, no API dependency
+- tsvector with English dictionary for stemming ("trading" matches "trade", "trader")
+- Database trigger auto-populates `search_vector` on INSERT/UPDATE (dev/production); test setup backfills fixtures
+- Normalized relevance scoring: ts_rank values divided by max rank in candidate set, ensuring 0-1 scale
+- Candidate limit of 200 memories per retrieval query to keep scoring fast
+- `relevantMemories` added alongside `recentMemories` in perception (different purposes: context relevance vs raw recency)
 
 #### Blockers
 - (none)
@@ -496,6 +511,17 @@
 - Tests for MemoryService
 - Next: Phase 9 (Memory Retrieval)
 
+### Session 9 - Phase 9 Memory Retrieval (2026-02-08)
+- Created MemoryRetrievalService with combined scoring (recency + importance + relevance)
+- PostgreSQL full-text search via tsvector/tsquery/ts_rank (zero external cost)
+- Migration: search_vector column + GIN index + database trigger
+- Normalized relevance scoring within candidate set for balanced weights
+- Helper queries: get_recent_memories, get_memories_about_agent, get_memories_at_location
+- PerceptionService updated with relevantMemories (top 5 context-relevant)
+- API docs page updated with relevantMemories in perception example
+- 15 new tests (224 total), rubocop clean, 0 offenses
+- Next: Phase 10 (Reflection System)
+
 ---
 
 ## Files Changed
@@ -533,6 +559,15 @@
 - `config/routes.rb` (modified — added memories route)
 - `test/services/memory_service_test.rb` (created)
 
+### Phase 9
+- `db/migrate/20260208000001_add_search_vector_to_memories.rb` (created — tsvector + GIN index + trigger)
+- `app/services/memory_retrieval_service.rb` (created — scoring + retrieval)
+- `test/services/memory_retrieval_service_test.rb` (created — 15 tests)
+- `app/services/perception_service.rb` (modified — added relevantMemories)
+- `test/services/perception_service_test.rb` (modified — verify relevantMemories key)
+- `test/fixtures/memories.yml` (modified — added 3 diverse fixtures)
+- `app/frontend/pages/Docs.tsx` (modified — relevantMemories in perception example + note)
+
 ## Architectural Decisions
 - concurrent-ruby TimerTask over sidekiq-scheduler for tick advancement (precision, zero overhead)
 - Derive current tick from Events table rather than separate storage
@@ -543,8 +578,12 @@
 - Redis SETNX lock for distributed memory processing safety across workers
 - Location-based observation: all agents at a location observe all location events
 - Memory cap of 1000 per agent with automatic low-importance trimming
+- PostgreSQL full-text search (tsvector/ts_rank) over vector embeddings for memory retrieval — zero external cost, scales with database
+- Normalized relevance scoring: ts_rank values divided by max in candidate set to ensure 0-1 scale matching recency/importance
 
 ## Lessons Learned
 - Parallel tests sharing Redis need process-scoped keys for isolation
 - sidekiq-scheduler is not designed for sub-minute precision (polls every ~5s itself)
 - DB schema already had left_at_tick/ended_at_tick columns — always check schema before planning migrations
+- PostgreSQL triggers defined in migrations don't carry into test DB via schema.rb — need to backfill tsvector in test setup
+- ts_rank returns very small values (0.03-0.1 range) — must normalize within candidate set for scoring weights to work meaningfully

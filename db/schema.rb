@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_07_000008) do
+ActiveRecord::Schema[8.1].define(version: 2026_02_08_000001) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -99,12 +99,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_07_000008) do
     t.string "location_id", limit: 32
     t.string "memory_type", null: false
     t.jsonb "related_agent_ids", default: [], null: false
+    t.tsvector "search_vector"
     t.integer "tick", null: false
     t.datetime "updated_at", null: false
     t.index ["agent_id", "memory_type"], name: "index_memories_on_agent_id_and_memory_type"
     t.index ["agent_id", "tick"], name: "index_memories_on_agent_id_and_tick"
     t.index ["importance"], name: "index_memories_on_importance"
     t.index ["memory_type"], name: "index_memories_on_memory_type"
+    t.index ["search_vector"], name: "index_memories_on_search_vector", using: :gin
   end
 
   create_table "relationships", id: { type: :string, limit: 32 }, force: :cascade do |t|

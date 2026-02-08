@@ -5,7 +5,7 @@ class PerceptionServiceTest < ActiveSupport::TestCase
     result = PerceptionService.build(agents(:alice))
 
     assert_kind_of Hash, result
-    %i[tick location nearbyAgents activeConversations recentEvents recentMemories self availableActions allLocations].each do |key|
+    %i[tick location nearbyAgents activeConversations recentEvents recentMemories relevantMemories self availableActions allLocations].each do |key|
       assert result.key?(key), "Missing key: #{key}"
     end
   end

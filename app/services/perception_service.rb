@@ -12,6 +12,7 @@ class PerceptionService
       activeConversations: active_conversations(location),
       recentEvents: recent_events(location, tick),
       recentMemories: recent_memories(agent, tick),
+      relevantMemories: relevant_memories(agent, location),
       self: self_json(agent),
       availableActions: AVAILABLE_ACTIONS,
       allLocations: all_locations
@@ -88,6 +89,22 @@ class PerceptionService
     end
   end
   private_class_method :recent_memories
+
+  def self.relevant_memories(agent, location)
+    nearby_names = Agent.at_location(location).where.not(id: agent.id).pluck(:name)
+    query = [ location.name, *nearby_names ].join(" ")
+
+    MemoryRetrievalService.get_relevant_memories(agent: agent, query: query, limit: 5).map do |m|
+      {
+        id: m.id,
+        type: m.memory_type,
+        content: m.content,
+        importance: m.importance,
+        tick: m.tick
+      }
+    end
+  end
+  private_class_method :relevant_memories
 
   def self.self_json(agent)
     {

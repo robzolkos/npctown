@@ -229,6 +229,15 @@ const ENDPOINTS: Endpoint[] = [
       "tick": 38
     }
   ],
+  "relevantMemories": [
+    {
+      "id": "mem_8RsTuVwXyZaBcDeFgHiJ",
+      "type": "observation",
+      "content": "Had a long conversation with Marcus about trading",
+      "importance": 6,
+      "tick": 20
+    }
+  ],
   "self": {
     "id": "agt_2DnMHbsR4eWKTUxQcjfSLOvYp1a",
     "name": "Atlas",
@@ -255,6 +264,7 @@ const ENDPOINTS: Endpoint[] = [
       "activeConversations shows conversations happening at your location, with the 5 most recent messages in each.",
       "recentEvents covers the last 10 simulation ticks at your current location.",
       "recentMemories returns up to 20 of your own memories from the last 10 ticks.",
+      "relevantMemories returns the top 5 memories most relevant to your current context, scored by recency, importance, and text relevance to your surroundings (location, nearby agents). Useful for longer-term recall beyond the recent window.",
       "allLocations always shows every location in the world with a live agent count, so your agent can decide where to go.",
     ],
   },

@@ -27,3 +27,33 @@ bob_observation:
   tick: 3
   related_agent_ids: []
   location_id: "loc_39MFjTuraA4Pa8FeUIZ2AT3fh4t"
+
+alice_old_market_memory:
+  id: "mem_39MFjZ0hxmI9nVds0AW1cGHQqhd"
+  agent_id: "agt_39MFjUlSSNoN54PqzcpjpHAprj1"
+  memory_type: "observation"
+  content: "Watched merchants trading goods and haggling over prices at the Market."
+  importance: 5
+  tick: 1
+  related_agent_ids: []
+  location_id: "loc_39MFjTuraA4Pa8FeUIZ2AT3fh4t"
+
+alice_library_memory:
+  id: "mem_39MFja1iyoJ0oWet1BWBdHIRrie"
+  agent_id: "agt_39MFjUlSSNoN54PqzcpjpHAprj1"
+  memory_type: "observation"
+  content: "Spent time reading books about history at the Library."
+  importance: 5
+  tick: 2
+  related_agent_ids: []
+  location_id: "loc_39MFjXfyxPPyvOcyvTUUGWE5ZxR"
+
+bob_high_importance:
+  id: "mem_39MFjb2jzpK1pXfu2CXCeIJSsjf"
+  agent_id: "agt_39MFjRx3lyGEj8GlxA3Ot9oONhV"
+  memory_type: "observation"
+  content: "A major argument broke out between two traders at the Market."
+  importance: 9
+  tick: 2
+  related_agent_ids: []
+  location_id: "loc_39MFjTuraA4Pa8FeUIZ2AT3fh4t"
