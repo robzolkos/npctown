@@ -1,6 +1,6 @@
 # NPC Town MVP Progress
 
-## Status: Phase 3 - Complete
+## Status: Phase 5 - Complete
 
 ## Quick Reference
 - Research: `docs/mvp/RESEARCH.md`
@@ -90,13 +90,22 @@
 ---
 
 ### Phase 4: Agent Registration & Authentication
-**Status:** Not Started
+**Status:** Complete
 
 #### Tasks Completed
-- (none yet)
+- `POST /api/v1/agents` — register agent, returns agentId + apiKey
+- `GET /api/v1/agents/:id` — get agent details (public)
+- `GET /api/v1/agents` — list agents with pagination
+- `DELETE /api/v1/agents/:id` — deregister agent (auth required, self-only)
+- Bearer token authentication via HMAC-SHA256 digest
+- New agents auto-placed at Town Square with default resources
+- agent_registered event emission
+- 16 new tests (100+ total), rubocop clean
 
 #### Decisions Made
-- (none yet)
+- Agents can only delete themselves (403 for others)
+- API key returned only at creation (never stored in plaintext)
+- Input validation: name required/unique, traits max 5, goals max 3
 
 #### Blockers
 - (none)
@@ -104,13 +113,24 @@
 ---
 
 ### Phase 5: Agent Perception System
-**Status:** Not Started
+**Status:** Complete
 
 #### Tasks Completed
-- (none yet)
+- `GET /api/v1/agents/:agent_id/perception` endpoint (auth required)
+- PerceptionService assembles full perception payload
+- Perception includes: tick, location, nearbyAgents, activeConversations, recentEvents, self, availableActions, allLocations
+- nearbyAgents excludes requesting agent, only same location
+- recentEvents scoped to agent's location and last 10 ticks
+- activeConversations includes participants and last 5 messages
+- allLocations includes agent counts via LEFT JOIN
+- Authorization: agents can only perceive as themselves (403 otherwise)
+- 16 new tests (116 total), rubocop clean
 
 #### Decisions Made
-- (none yet)
+- availableActions is static for now (`move`, `speak`, `emote`, `wait`) — Phase 6 will make it context-dependent
+- recentEvents window is last 10 ticks (not configurable yet)
+- Conversation messages capped at 5 most recent per conversation
+- Agent counts use `LEFT JOIN` + `GROUP BY` for efficiency
 
 #### Blockers
 - (none)
@@ -407,6 +427,14 @@
 - 19 new tests (80 total), rubocop clean
 - Next: Phase 4 (Agent Registration & Authentication)
 
+### Session 5 - Phase 5 Agent Perception System (2026-02-08)
+- Created PerceptionService with `build(agent)` assembling full perception payload
+- Created PerceptionsController with auth + authorization (self-only)
+- Nested route: `GET /api/v1/agents/:agent_id/perception`
+- 8 top-level keys: tick, location, nearbyAgents, activeConversations, recentEvents, self, availableActions, allLocations
+- 16 new tests (116 total), rubocop clean
+- Next: Phase 6 (Agent Action System)
+
 ---
 
 ## Files Changed
@@ -415,6 +443,13 @@
 - `app/services/simulation_service.rb` (created)
 - `config/initializers/simulation.rb` (created)
 - `test/services/simulation_service_test.rb` (created)
+
+### Phase 5
+- `app/services/perception_service.rb` (created)
+- `app/controllers/api/v1/perceptions_controller.rb` (created)
+- `test/services/perception_service_test.rb` (created)
+- `test/controllers/api/v1/perceptions_controller_test.rb` (created)
+- `config/routes.rb` (modified — added nested perception route)
 
 ## Architectural Decisions
 - concurrent-ruby TimerTask over sidekiq-scheduler for tick advancement (precision, zero overhead)

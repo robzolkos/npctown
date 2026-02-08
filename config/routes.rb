@@ -3,7 +3,9 @@ Rails.application.routes.draw do
 
   namespace :api do
     namespace :v1 do
-      resources :agents, only: [ :create, :show, :index, :destroy ]
+      resources :agents, only: [ :create, :show, :index, :destroy ] do
+        resource :perception, only: [ :show ]
+      end
     end
   end
 
