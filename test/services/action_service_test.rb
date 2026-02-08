@@ -89,15 +89,14 @@ class ActionServiceTest < ActiveSupport::TestCase
   end
 
   test "move emits agent_moved and stamina_changed events" do
-    assert_difference "Event.count", 2 do
-      ActionService.execute(
-        agent: agents(:alice),
-        action_type: "move",
-        params: { target_location_id: locations(:market).id }
-      )
-    end
+    # Alice is in active_conversation fixture, so move also emits leave + end events
+    ActionService.execute(
+      agent: agents(:alice),
+      action_type: "move",
+      params: { target_location_id: locations(:market).id }
+    )
 
-    event_types = Event.last(2).map(&:event_type)
+    event_types = Event.pluck(:event_type)
     assert_includes event_types, "agent_moved"
     assert_includes event_types, "stamina_changed"
   end
@@ -199,5 +198,146 @@ class ActionServiceTest < ActiveSupport::TestCase
 
     assert result[:success]
     assert_equal 0, alice.reload.stamina
+  end
+
+  # --- Start Conversation ---
+
+  test "startConversation creates conversation and deducts 2 stamina" do
+    alice = agents(:alice)
+    charlie = agents(:charlie)
+
+    result = ActionService.execute(
+      agent: alice,
+      action_type: "startConversation",
+      params: { target_agent_id: charlie.id, message: "Hey!" }
+    )
+
+    assert result[:success]
+    assert_equal 98, alice.reload.stamina
+    assert_equal 1, Conversation.where(location: alice.location).active.count - 1  # minus existing fixture
+  end
+
+  test "startConversation raises for missing target_agent_id" do
+    assert_raises(ActionService::ActionError) do
+      ActionService.execute(
+        agent: agents(:alice),
+        action_type: "startConversation",
+        params: { message: "Hello" }
+      )
+    end
+  end
+
+  test "startConversation raises for missing message" do
+    assert_raises(ActionService::ActionError) do
+      ActionService.execute(
+        agent: agents(:alice),
+        action_type: "startConversation",
+        params: { target_agent_id: agents(:charlie).id }
+      )
+    end
+  end
+
+  test "startConversation raises for nonexistent target agent" do
+    error = assert_raises(ActionService::ActionError) do
+      ActionService.execute(
+        agent: agents(:alice),
+        action_type: "startConversation",
+        params: { target_agent_id: "agt_nonexistent000000000000000", message: "Hi!" }
+      )
+    end
+    assert_equal "Target agent not found", error.message
+  end
+
+  # --- Conversation Message ---
+
+  test "conversationMessage creates message and deducts 1 stamina" do
+    alice = agents(:alice)
+    conversation = conversations(:active_conversation)
+
+    result = ActionService.execute(
+      agent: alice,
+      action_type: "conversationMessage",
+      params: { conversation_id: conversation.id, message: "How are you?" }
+    )
+
+    assert result[:success]
+    assert_equal 99, alice.reload.stamina
+  end
+
+  test "conversationMessage raises for missing conversation_id" do
+    assert_raises(ActionService::ActionError) do
+      ActionService.execute(
+        agent: agents(:alice),
+        action_type: "conversationMessage",
+        params: { message: "Hello" }
+      )
+    end
+  end
+
+  # --- Join Conversation ---
+
+  test "joinConversation adds agent and deducts 1 stamina" do
+    charlie = agents(:charlie)
+    conversation = conversations(:active_conversation)
+
+    result = ActionService.execute(
+      agent: charlie,
+      action_type: "joinConversation",
+      params: { conversation_id: conversation.id }
+    )
+
+    assert result[:success]
+    assert_equal 99, charlie.reload.stamina
+    assert conversation.conversation_participants.exists?(agent: charlie)
+  end
+
+  # --- Leave Conversation ---
+
+  test "leaveConversation removes agent with 0 stamina cost" do
+    alice = agents(:alice)
+    conversation = conversations(:active_conversation)
+    original_stamina = alice.stamina
+
+    result = ActionService.execute(
+      agent: alice,
+      action_type: "leaveConversation",
+      params: { conversation_id: conversation.id }
+    )
+
+    assert result[:success]
+    assert_equal original_stamina, alice.reload.stamina
+
+    participant = conversation.conversation_participants.find_by(agent: alice)
+    assert_not_nil participant.left_at_tick
+  end
+
+  # --- Move auto-leaves conversations ---
+
+  test "move auto-leaves active conversations" do
+    alice = agents(:alice)
+    conversation = conversations(:active_conversation)
+
+    ActionService.execute(
+      agent: alice,
+      action_type: "move",
+      params: { target_location_id: locations(:market).id }
+    )
+
+    participant = conversation.conversation_participants.find_by(agent: alice)
+    assert_not_nil participant.left_at_tick
+  end
+
+  test "move auto-ends conversation when last participant leaves" do
+    alice = agents(:alice)
+    conversation = conversations(:active_conversation)
+    # Alice is the only participant in the fixture
+
+    ActionService.execute(
+      agent: alice,
+      action_type: "move",
+      params: { target_location_id: locations(:market).id }
+    )
+
+    assert_equal "ended", conversation.reload.status
   end
 end

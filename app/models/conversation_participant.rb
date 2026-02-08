@@ -7,4 +7,6 @@ class ConversationParticipant < ApplicationRecord
 
   validates :joined_at_tick, presence: true
   validates :agent_id, uniqueness: { scope: :conversation_id }
+
+  scope :active, -> { where(left_at_tick: nil) }
 end

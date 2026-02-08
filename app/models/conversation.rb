@@ -14,4 +14,17 @@ class Conversation < ApplicationRecord
 
   scope :active, -> { where(status: "active") }
   scope :at_location, ->(location) { where(location: location) }
+
+  def active_participants
+    conversation_participants.where(left_at_tick: nil)
+  end
+
+  def last_message_tick
+    conversation_messages.maximum(:tick)
+  end
+
+  def stale?(current_tick, threshold: 5)
+    last_tick = last_message_tick || started_at_tick
+    current_tick - last_tick >= threshold
+  end
 end

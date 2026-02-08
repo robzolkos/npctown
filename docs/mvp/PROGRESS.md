@@ -1,6 +1,6 @@
 # NPC Town MVP Progress
 
-## Status: Phase 5 - Complete
+## Status: Phase 7 - Complete
 
 ## Quick Reference
 - Research: `docs/mvp/RESEARCH.md`
@@ -138,13 +138,20 @@
 ---
 
 ### Phase 6: Agent Action System
-**Status:** Not Started
+**Status:** Complete
 
 #### Tasks Completed
-- (none yet)
+- `POST /api/v1/agents/:agent_id/actions` endpoint with auth
+- ActionService with 4 action types: move, speak, emote, wait
+- Stamina costs: move (5), speak (1), emote (1), wait (0)
+- Validation, stamina deduction, event emission
+- Transaction-safe execution with rollback
+- 25 new tests (141 total), rubocop clean
 
 #### Decisions Made
-- (none yet)
+- ActionService uses class methods with private_class_method pattern
+- Transaction wraps stamina deduction + action execution for rollback safety
+- Events emitted inside the transaction
 
 #### Blockers
 - (none)
@@ -152,13 +159,31 @@
 ---
 
 ### Phase 7: Conversation System
-**Status:** Not Started
+**Status:** Complete
 
 #### Tasks Completed
-- (none yet)
+- ConversationService with full lifecycle: start, join, message, leave, end
+- 4 new action types: startConversation (2 stamina), joinConversation (1), leaveConversation (0), conversationMessage (1)
+- Same-location validation for starting/joining conversations
+- Max 2 active conversations per agent
+- Auto-leave conversations when agent moves to a different location
+- Auto-end conversations when all participants leave (reason: all_left)
+- Auto-end stale conversations with no messages for 5+ ticks via tick listener (reason: stale)
+- ConversationService registered as SimulationService tick listener
+- Model helpers: Conversation#active_participants, #last_message_tick, #stale?
+- ConversationParticipant.active scope
+- PerceptionService updated with conversation actions in availableActions
+- ActionsController updated with conversation params (targetAgentId, conversationId)
+- Charlie fixture added (agent at Town Square for conversation tests)
+- 33 new tests (174 total), rubocop clean, 0 offenses
 
 #### Decisions Made
-- (none yet)
+- ConversationService as separate service (not inside ActionService) for clean separation
+- ActionService delegates to ConversationService for all conversation logic
+- leaveConversation costs 0 stamina (free to leave)
+- No migration needed — left_at_tick and ended_at_tick columns already existed in schema
+- Tick listener registered in config/initializers/simulation.rb (alongside existing Sidekiq shutdown hook)
+- System messages (join/leave) emitted as conversation_message events with system: true in payload
 
 #### Blockers
 - (none)
@@ -435,6 +460,16 @@
 - 16 new tests (116 total), rubocop clean
 - Next: Phase 6 (Agent Action System)
 
+### Session 7 - Phase 7 Conversation System (2026-02-08)
+- Created ConversationService with full conversation lifecycle (start, join, message, leave, end)
+- Extended ActionService with 4 new conversation action types
+- Auto-leave on move, auto-end on all-left, auto-end stale via tick listener
+- Max 2 active conversations per agent enforced
+- Updated PerceptionService, ActionsController, Conversation model, ConversationParticipant model
+- Added charlie fixture for conversation tests
+- 33 new tests (174 total), rubocop clean, 0 offenses
+- Next: Phase 8 (Memory Storage)
+
 ---
 
 ## Files Changed
@@ -451,11 +486,27 @@
 - `test/controllers/api/v1/perceptions_controller_test.rb` (created)
 - `config/routes.rb` (modified — added nested perception route)
 
+### Phase 7
+- `app/services/conversation_service.rb` (created)
+- `app/services/action_service.rb` (modified — added 4 conversation action types + auto-leave on move)
+- `app/controllers/api/v1/actions_controller.rb` (modified — conversation params + error handling)
+- `app/services/perception_service.rb` (modified — conversation actions in AVAILABLE_ACTIONS)
+- `app/models/conversation.rb` (modified — active_participants, last_message_tick, stale?)
+- `app/models/conversation_participant.rb` (modified — active scope)
+- `config/initializers/simulation.rb` (modified — registered ConversationService tick listener)
+- `test/services/conversation_service_test.rb` (created)
+- `test/services/action_service_test.rb` (modified — conversation action tests)
+- `test/services/perception_service_test.rb` (modified — updated expected actions)
+- `test/fixtures/agents.yml` (modified — added charlie)
+
 ## Architectural Decisions
 - concurrent-ruby TimerTask over sidekiq-scheduler for tick advancement (precision, zero overhead)
 - Derive current tick from Events table rather than separate storage
 - Redis for simulation state via Sidekiq connection pool
+- ConversationService as separate service from ActionService for clean separation of concerns
+- System messages (join/leave) use conversation_message event type with system: true payload flag
 
 ## Lessons Learned
 - Parallel tests sharing Redis need process-scoped keys for isolation
 - sidekiq-scheduler is not designed for sub-minute precision (polls every ~5s itself)
+- DB schema already had left_at_tick/ended_at_tick columns — always check schema before planning migrations

@@ -97,7 +97,7 @@ class PerceptionServiceTest < ActiveSupport::TestCase
   test "availableActions returns expected list" do
     result = PerceptionService.build(agents(:alice))
 
-    assert_equal %w[move speak emote wait], result[:availableActions]
+    assert_equal %w[move speak emote wait startConversation joinConversation leaveConversation conversationMessage], result[:availableActions]
   end
 
   test "allLocations includes all locations with agent counts" do

@@ -25,3 +25,17 @@ bob:
   energy: 90
   currency: 200
   api_key_digest: "fixture_digest_bob"
+
+charlie:
+  id: "agt_39MFjCharlieTestAgent00000"
+  name: "Charlie"
+  description: "A curious observer"
+  personality_traits: <%= ["observant", "quiet"].to_json %>
+  goals: <%= ["learn from others"].to_json %>
+  location_id: "loc_39MFjRpzXv5P5ywYrNEB9h1spEv"
+  status: "active"
+  stamina: 100
+  food: 50
+  energy: 100
+  currency: 100
+  api_key_digest: "fixture_digest_charlie"

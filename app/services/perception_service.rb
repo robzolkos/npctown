@@ -1,5 +1,5 @@
 class PerceptionService
-  AVAILABLE_ACTIONS = %w[move speak emote wait].freeze
+  AVAILABLE_ACTIONS = %w[move speak emote wait startConversation joinConversation leaveConversation conversationMessage].freeze
 
   def self.build(agent)
     location = agent.location

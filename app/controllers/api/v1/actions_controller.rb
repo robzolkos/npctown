@@ -12,7 +12,7 @@ class Api::V1::ActionsController < Api::V1::BaseController
     )
 
     render json: result, status: :created
-  rescue ActionService::ActionError, WorldService::MovementError => e
+  rescue ActionService::ActionError, WorldService::MovementError, ConversationService::ConversationError => e
     render json: { success: false, error: e.message }, status: :unprocessable_entity
   end
 
@@ -22,7 +22,9 @@ class Api::V1::ActionsController < Api::V1::BaseController
     {
       target_location_id: params[:targetLocationId],
       message: params[:message],
-      description: params[:description]
+      description: params[:description],
+      target_agent_id: params[:targetAgentId],
+      conversation_id: params[:conversationId]
     }
   end
 end
