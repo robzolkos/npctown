@@ -1,7 +1,7 @@
 class ActionService
   class ActionError < StandardError; end
 
-  ACTION_TYPES = %w[move speak emote wait startConversation joinConversation leaveConversation conversationMessage].freeze
+  ACTION_TYPES = %w[move speak emote wait startConversation joinConversation leaveConversation conversationMessage reflect].freeze
 
   STAMINA_COSTS = {
     "move" => 5,
@@ -11,7 +11,8 @@ class ActionService
     "startConversation" => 2,
     "joinConversation" => 1,
     "leaveConversation" => 0,
-    "conversationMessage" => 1
+    "conversationMessage" => 1,
+    "reflect" => 0
   }.freeze
 
   def self.execute(agent:, action_type:, params: {})
@@ -32,6 +33,7 @@ class ActionService
       when "joinConversation"     then execute_join_conversation(agent, params, tick)
       when "leaveConversation"    then execute_leave_conversation(agent, params, tick)
       when "conversationMessage"  then execute_conversation_message(agent, params, tick)
+      when "reflect"              then execute_reflect(agent, params, tick)
       end
 
       { success: true, tick: tick, event: event&.as_json }
@@ -62,6 +64,8 @@ class ActionService
     when "conversationMessage"
       raise ActionError, "conversationId is required" unless params[:conversation_id].present?
       raise ActionError, "message is required" unless params[:message].present?
+    when "reflect"
+      raise ActionError, "content is required" unless params[:content].present?
     end
   end
   private_class_method :validate!
@@ -167,4 +171,26 @@ class ActionService
     Event.where(event_type: "conversation_message", agent: agent).order(created_at: :desc).first
   end
   private_class_method :execute_conversation_message
+
+  def self.execute_reflect(agent, params, tick)
+    memory = MemoryService.create_memory(
+      agent: agent,
+      type: "reflection",
+      content: params[:content],
+      importance: 9,
+      tick: tick,
+      location: agent.location
+    )
+
+    agent.memories.observations.unreflected.update_all(reflected_upon: true)
+
+    EventService.append(
+      event_type: "reflection_created",
+      tick: tick,
+      agent: agent,
+      location: agent.location,
+      payload: { memory_id: memory.id, content: params[:content], source: "agent" }
+    )
+  end
+  private_class_method :execute_reflect
 end

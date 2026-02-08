@@ -1,5 +1,6 @@
 class PerceptionService
-  AVAILABLE_ACTIONS = %w[move speak emote wait startConversation joinConversation leaveConversation conversationMessage].freeze
+  BASE_ACTIONS = %w[move speak emote wait startConversation joinConversation leaveConversation conversationMessage].freeze
+  REFLECT_THRESHOLD = 5
 
   def self.build(agent)
     location = agent.location
@@ -13,8 +14,10 @@ class PerceptionService
       recentEvents: recent_events(location, tick),
       recentMemories: recent_memories(agent, tick),
       relevantMemories: relevant_memories(agent, location),
+      recentReflections: recent_reflections(agent),
+      unreflectedObservations: unreflected_observations(agent),
       self: self_json(agent),
-      availableActions: AVAILABLE_ACTIONS,
+      availableActions: available_actions(agent),
       allLocations: all_locations
     }
   end
@@ -105,6 +108,36 @@ class PerceptionService
     end
   end
   private_class_method :relevant_memories
+
+  def self.recent_reflections(agent)
+    agent.memories.reflection_type.recent.limit(5).map do |m|
+      {
+        id: m.id,
+        content: m.content,
+        importance: m.importance,
+        tick: m.tick
+      }
+    end
+  end
+  private_class_method :recent_reflections
+
+  def self.unreflected_observations(agent)
+    observations = agent.memories.observations.unreflected.by_importance.limit(20)
+    {
+      count: agent.memories.observations.unreflected.count,
+      memories: observations.map do |m|
+        { id: m.id, content: m.content, importance: m.importance, tick: m.tick }
+      end
+    }
+  end
+  private_class_method :unreflected_observations
+
+  def self.available_actions(agent)
+    actions = BASE_ACTIONS.dup
+    actions << "reflect" if agent.memories.observations.unreflected.count >= REFLECT_THRESHOLD
+    actions
+  end
+  private_class_method :available_actions
 
   def self.self_json(agent)
     {

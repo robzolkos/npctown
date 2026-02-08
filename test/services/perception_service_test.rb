@@ -5,7 +5,7 @@ class PerceptionServiceTest < ActiveSupport::TestCase
     result = PerceptionService.build(agents(:alice))
 
     assert_kind_of Hash, result
-    %i[tick location nearbyAgents activeConversations recentEvents recentMemories relevantMemories self availableActions allLocations].each do |key|
+    %i[tick location nearbyAgents activeConversations recentEvents recentMemories relevantMemories recentReflections unreflectedObservations self availableActions allLocations].each do |key|
       assert result.key?(key), "Missing key: #{key}"
     end
   end
@@ -94,10 +94,50 @@ class PerceptionServiceTest < ActiveSupport::TestCase
     assert_equal agents(:alice).status, self_data[:status]
   end
 
-  test "availableActions returns expected list" do
+  test "availableActions returns base actions" do
+    result = PerceptionService.build(agents(:alice))
+    base = %w[move speak emote wait startConversation joinConversation leaveConversation conversationMessage]
+
+    base.each do |action|
+      assert_includes result[:availableActions], action
+    end
+  end
+
+  test "availableActions includes reflect when enough unreflected observations" do
+    alice = agents(:alice)
+    alice.memories.observations.update_all(reflected_upon: true)
+
+    5.times do |i|
+      MemoryService.create_memory(
+        agent: alice, content: "Observation #{i}", importance: 3, tick: 10 + i
+      )
+    end
+
+    result = PerceptionService.build(alice)
+    assert_includes result[:availableActions], "reflect"
+  end
+
+  test "availableActions excludes reflect when few unreflected observations" do
+    alice = agents(:alice)
+    alice.memories.observations.update_all(reflected_upon: true)
+
+    result = PerceptionService.build(alice)
+    assert_not_includes result[:availableActions], "reflect"
+  end
+
+  test "unreflectedObservations returns count and memories" do
     result = PerceptionService.build(agents(:alice))
 
-    assert_equal %w[move speak emote wait startConversation joinConversation leaveConversation conversationMessage], result[:availableActions]
+    assert result[:unreflectedObservations].key?(:count)
+    assert result[:unreflectedObservations].key?(:memories)
+    assert_kind_of Integer, result[:unreflectedObservations][:count]
+    assert_kind_of Array, result[:unreflectedObservations][:memories]
+  end
+
+  test "recentReflections returns array" do
+    result = PerceptionService.build(agents(:alice))
+
+    assert_kind_of Array, result[:recentReflections]
   end
 
   test "allLocations includes all locations with agent counts" do

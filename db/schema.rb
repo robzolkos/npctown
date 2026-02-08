@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_08_000001) do
+ActiveRecord::Schema[8.1].define(version: 2026_02_08_000002) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -98,11 +98,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_08_000001) do
     t.integer "importance", default: 5, null: false
     t.string "location_id", limit: 32
     t.string "memory_type", null: false
+    t.boolean "reflected_upon", default: false, null: false
     t.jsonb "related_agent_ids", default: [], null: false
     t.tsvector "search_vector"
     t.integer "tick", null: false
     t.datetime "updated_at", null: false
     t.index ["agent_id", "memory_type"], name: "index_memories_on_agent_id_and_memory_type"
+    t.index ["agent_id", "reflected_upon"], name: "idx_memories_unreflected_observations", where: "((reflected_upon = false) AND ((memory_type)::text = 'observation'::text))"
     t.index ["agent_id", "tick"], name: "index_memories_on_agent_id_and_tick"
     t.index ["importance"], name: "index_memories_on_importance"
     t.index ["memory_type"], name: "index_memories_on_memory_type"

@@ -24,7 +24,8 @@ class Api::V1::ActionsController < Api::V1::BaseController
       message: params[:message],
       description: params[:description],
       target_agent_id: params[:targetAgentId],
-      conversation_id: params[:conversationId]
+      conversation_id: params[:conversationId],
+      content: params[:content]
     }
   end
 end

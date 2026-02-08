@@ -39,6 +39,25 @@ bundle exec rails console       # Start Rails console
 bundle exec rails routes        # Show all application routes
 ```
 
+### Installation & Build
+
+```bash
+bundle install                  # Install Ruby dependencies
+npm install                     # Install JavaScript dependencies
+bundle exec rails assets:precompile  # Build assets for production
+```
+
+### Using agent-browser
+For any frontend changes, verify using:
+```bash
+agent-browser open http://localhost:$CONDUCTOR_PORT  # Navigate to page
+agent-browser snapshot -i                             # Get interactive elements
+agent-browser click @e1                               # Interact with elements
+agent-browser fill @e2 "text"                         # Fill form fields
+```
+
+Our dev server is always `http://localhost:$CONDUCTOR_PORT`. Use it when doing any kind of manual verification.
+
 ## Architecture Overview
 
 ### Tech Stack

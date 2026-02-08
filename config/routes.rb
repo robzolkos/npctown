@@ -7,6 +7,7 @@ Rails.application.routes.draw do
         resource :perception, only: [ :show ]
         resources :actions, only: [ :create ]
         resources :memories, only: [ :index ]
+        resources :reflections, only: [ :index ]
       end
     end
   end

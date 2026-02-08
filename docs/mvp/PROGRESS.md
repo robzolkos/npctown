@@ -1,6 +1,6 @@
 # NPC Town MVP Progress
 
-## Status: Phase 9 - Complete
+## Status: Phase 10 - Complete
 
 ## Quick Reference
 - Research: `docs/mvp/RESEARCH.md`
@@ -248,14 +248,35 @@
 
 ---
 
-### Phase 10: Reflection System
-**Status:** Not Started
+### Phase 10: Reflection System (Hybrid)
+**Status:** Complete
 
 #### Tasks Completed
-- (none yet)
+- Migration: `reflected_upon` boolean on memories with partial index for unreflected observations
+- Memory model: added `unreflected` scope
+- ActionService: `reflect` action type (0 stamina cost, importance 9, marks observations as reflected)
+- ActionsController: added `content` param for reflect action
+- ReflectionService: platform fallback tick listener (every 100 ticks, importance 7)
+  - Location frequency pattern detection (3+ observations at same location)
+  - Agent interaction frequency pattern detection (3+ observations mentioning same agent)
+  - Max 2 template reflections per agent per cycle
+- ProcessReflectionsJob: Sidekiq job for async reflection processing
+- Registered ReflectionService as SimulationService tick listener
+- PerceptionService: unreflectedObservations (count + top 20), recentReflections (last 5), dynamic availableActions (reflect appears when >= 5 unreflected)
+- ReflectionsController: GET /api/v1/agents/:id/reflections (auth required, self-only)
+- Route: `resources :reflections, only: [:index]` nested under agents
+- API docs (Docs.tsx): reflect action type, reflections endpoint, perception updates, How Agents Work, Agent Loop
+- 25 new tests (249 total), rubocop clean, 0 offenses
 
 #### Decisions Made
-- (none yet)
+- **Hybrid approach**: Agent-driven reflections (preferred, importance 9) + platform template fallback (importance 7)
+- Agent incentive: higher importance score = stronger influence on future perception/retrieval
+- `reflected_upon` flag coordinates both paths — if agent reflects first, platform skips those observations
+- Platform fallback runs every 100 ticks (slow, gives agents time to reflect on their own)
+- Template-based pattern detection (no LLM) for platform fallback — simple location/agent frequency analysis
+- Reflect action costs 0 stamina (free to encourage usage)
+- `source: "agent"` vs `source: "system"` in reflection_created event payloads for tracking
+- Partial index on `(agent_id, reflected_upon) WHERE reflected_upon = FALSE AND memory_type = 'observation'` for fast unreflected lookups
 
 #### Blockers
 - (none)
@@ -522,6 +543,17 @@
 - 15 new tests (224 total), rubocop clean, 0 offenses
 - Next: Phase 10 (Reflection System)
 
+### Session 10 - Phase 10 Reflection System (2026-02-08)
+- Hybrid reflection system: agent-driven (importance 9) + platform fallback (importance 7)
+- `reflect` action type in ActionService (0 stamina, creates reflection, marks observations reflected)
+- ReflectionService tick listener with template-based pattern detection (location freq + agent interaction freq)
+- ProcessReflectionsJob for async platform reflections every 100 ticks
+- PerceptionService: unreflectedObservations, recentReflections, dynamic availableActions with reflect
+- ReflectionsController + route for listing agent reflections
+- API docs updated with reflect action, reflections endpoint, perception changes, agent loop
+- 25 new tests (249 total), rubocop clean, 0 offenses
+- Next: Phase 11 (Planning System)
+
 ---
 
 ## Files Changed
@@ -568,6 +600,23 @@
 - `test/fixtures/memories.yml` (modified — added 3 diverse fixtures)
 - `app/frontend/pages/Docs.tsx` (modified — relevantMemories in perception example + note)
 
+### Phase 10
+- `db/migrate/20260208000002_add_reflected_upon_to_memories.rb` (created — reflected_upon boolean + partial index)
+- `app/models/memory.rb` (modified — added unreflected scope)
+- `app/services/action_service.rb` (modified — reflect action type, execute_reflect)
+- `app/controllers/api/v1/actions_controller.rb` (modified — content param)
+- `app/services/reflection_service.rb` (created — platform fallback tick listener)
+- `app/jobs/process_reflections_job.rb` (created — Sidekiq job)
+- `config/initializers/sidekiq.rb` (modified — registered ReflectionService listener)
+- `app/services/perception_service.rb` (modified — unreflectedObservations, recentReflections, dynamic availableActions)
+- `app/controllers/api/v1/reflections_controller.rb` (created — GET reflections endpoint)
+- `config/routes.rb` (modified — added reflections route)
+- `app/frontend/pages/Docs.tsx` (modified — reflect action, reflections endpoint, perception updates)
+- `test/services/reflection_action_test.rb` (created — 6 tests)
+- `test/services/reflection_service_test.rb` (created — 10 tests)
+- `test/controllers/api/v1/reflections_controller_test.rb` (created — 4 tests)
+- `test/services/perception_service_test.rb` (modified — 5 new tests for reflection data)
+
 ## Architectural Decisions
 - concurrent-ruby TimerTask over sidekiq-scheduler for tick advancement (precision, zero overhead)
 - Derive current tick from Events table rather than separate storage
@@ -580,6 +629,9 @@
 - Memory cap of 1000 per agent with automatic low-importance trimming
 - PostgreSQL full-text search (tsvector/ts_rank) over vector embeddings for memory retrieval — zero external cost, scales with database
 - Normalized relevance scoring: ts_rank values divided by max in candidate set to ensure 0-1 scale matching recency/importance
+- Hybrid reflection: agent-driven (importance 9) + platform fallback (importance 7) — agents bring their own compute, platform catches stragglers
+- `reflected_upon` flag coordinates both paths: agent reflects → marks observed, platform skips already-reflected
+- Platform fallback uses simple template patterns (no LLM) — location frequency + agent interaction frequency
 
 ## Lessons Learned
 - Parallel tests sharing Redis need process-scoped keys for isolation

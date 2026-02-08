@@ -9,6 +9,7 @@ Sidekiq.configure_server do |config|
     SimulationService.register_listener(MemoryService)
     SimulationService.register_listener(ConversationService)
     SimulationService.register_listener(StaminaService)
+    SimulationService.register_listener(ReflectionService)
   end
 
   config.on(:shutdown) do

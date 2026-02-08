@@ -18,4 +18,5 @@ class Memory < ApplicationRecord
   scope :by_importance, -> { order(importance: :desc) }
   scope :recent, -> { order(tick: :desc) }
   scope :about_agent, ->(agent_id) { where("related_agent_ids @> ?", [ agent_id ].to_json) }
+  scope :unreflected, -> { where(reflected_upon: false) }
 end
