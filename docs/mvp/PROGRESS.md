@@ -1,6 +1,6 @@
 # NPC Town MVP Progress
 
-## Status: Phase 14 - Complete
+## Status: Phase 15 - Complete
 
 ## Quick Reference
 - Research: `docs/mvp/RESEARCH.md`
@@ -402,13 +402,36 @@
 ---
 
 ### Phase 15: Spectator API (SSE Stream)
-**Status:** Not Started
+**Status:** Complete
 
 #### Tasks Completed
-- (none yet)
+- SpectatorEventFormatter service: formats raw events into spectator-friendly JSON with human-readable messages
+- `format(event)` returns { id, tick, timestamp, type, message, details }
+- `format_many(events)` batch-formats with N+1 prevention via agent cache
+- `spectator_visible?(event)` filters out internal events (tick_advanced, memory_created, reflection_created, stamina_changed)
+- Human-readable messages for all 13 spectator-visible event types
+- SpectateController (inherits ActionController::API directly, no auth)
+- `GET /api/v1/spectate/stream` — SSE endpoint with ActionController::Live
+  - Polling-based (1s interval), heartbeat every 15s
+  - `Last-Event-ID` header support for reconnection
+  - Location filter: `?location=market` (case-insensitive)
+  - Agent filter: `?agent=<agentId>`
+  - Graceful disconnect handling (IOError, ClientDisconnected)
+- `GET /api/v1/spectate/history` — JSON catch-up endpoint
+  - `since_tick` param, `limit` (default 50, max 200)
+  - Same location/agent filters as stream
+  - Returns array of formatted events (same shape as SSE data)
+- Routes added: `resource :spectate` with stream and history actions
+- 16 formatter tests + 9 controller integration tests (25 new, 374 total)
+- Rubocop clean, 0 offenses
 
 #### Decisions Made
-- (none yet)
+- Polling over pub/sub — simpler, no Redis pub/sub channel needed, 1s interval fine for 5s tick
+- No auth — spectator API is public by design
+- No batching/buffering — 5s ticks + 1s polling naturally batches events
+- Separate controller base — inherits ActionController::API directly (not BaseController) to skip authenticate_agent!
+- Location filter uses case-insensitive name match (LOWER)
+- Agent filter uses prefixed ID lookup via find_by_prefixed_id
 
 #### Blockers
 - (none)
@@ -659,6 +682,15 @@
 - Manual API verification: all stamina costs, stamina=0 restrictions, rate limiting 429s confirmed
 - Next: Phase 15 (Spectator API / SSE Stream)
 
+### Session 15 - Phase 15 Spectator API (2026-02-08)
+- Created SpectatorEventFormatter service with human-readable event formatting
+- Created SpectateController with SSE stream (polling-based) and history endpoint
+- Public endpoints (no auth): GET /api/v1/spectate/stream, GET /api/v1/spectate/history
+- SSE: Last-Event-ID reconnection, location/agent filters, 15s heartbeat
+- History: since_tick, limit, location/agent filters, formatted JSON array
+- 25 new tests (374 total), rubocop clean, 0 offenses
+- Next: Phase 16 (Spectator UI — Feed/Timeline)
+
 ---
 
 ## Files Changed
@@ -782,6 +814,13 @@
 - `test/controllers/api/v1/actions_controller_test.rb` (modified — 429 test)
 - `app/frontend/pages/Docs.tsx` (modified — stamina costs, 429 error code, rate limiting notes, stamina=0 notes)
 
+### Phase 15
+- `app/services/spectator_event_formatter.rb` (created — event formatting + human messages)
+- `app/controllers/api/v1/spectate_controller.rb` (created — SSE stream + history endpoint)
+- `config/routes.rb` (modified — added spectate routes)
+- `test/services/spectator_event_formatter_test.rb` (created — 16 tests)
+- `test/controllers/api/v1/spectate_controller_test.rb` (created — 9 tests)
+
 ## Architectural Decisions
 - concurrent-ruby TimerTask over sidekiq-scheduler for tick advancement (precision, zero overhead)
 - Derive current tick from Events table rather than separate storage
@@ -807,6 +846,8 @@
 - Fixed-window rate limiting (INCR+EXPIRE in MULTI) over sliding window — simpler, sufficient for game simulation
 - Shared "data" rate limit bucket across data endpoints — simpler than per-endpoint limits
 - Stamina=0 guard separate from energy=0 exhaustion guard — different allowed action sets
+- Polling-based SSE (1s DB poll) over Redis pub/sub — simpler, no channel infrastructure, 1s latency fine for 5s tick
+- SpectateController inherits ActionController::API directly (not BaseController) — avoids authenticate_agent! for public endpoints
 
 ## Lessons Learned
 - Parallel tests sharing Redis need process-scoped keys for isolation
