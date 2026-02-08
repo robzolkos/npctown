@@ -1,6 +1,6 @@
 # NPC Town MVP Progress
 
-## Status: Phase 2 - Complete
+## Status: Phase 3 - Complete
 
 ## Quick Reference
 - Research: `docs/mvp/RESEARCH.md`
@@ -63,13 +63,26 @@
 ---
 
 ### Phase 3: Simulation Loop (Tick Engine)
-**Status:** Not Started
+**Status:** Complete
 
 #### Tasks Completed
-- (none yet)
+- SimulationService with start/stop/pause/resume state management
+- Tick advancement via `tick!` — increments tick, emits `tick_advanced` event, notifies listeners
+- Current tick derived from Events table (`MAX(tick)` from `tick_advanced` events)
+- Simulation state stored in Redis via Sidekiq connection pool
+- `Concurrent::TimerTask` for precise tick scheduling (configurable via `TICK_INTERVAL` env var, default 5s)
+- Timer runs inside Sidekiq process with lifecycle hooks for clean shutdown
+- Listener registry pattern — services register via `register_listener` and receive `on_tick(tick)` calls
+- Individual listener failure isolation (one bad listener doesn't halt the simulation)
+- Sidekiq initializer for clean timer shutdown on process exit
+- 19 new tests (80 total passing), rubocop clean
 
 #### Decisions Made
-- (none yet)
+- **concurrent-ruby TimerTask over sidekiq-scheduler**: sidekiq-scheduler is imprecise at sub-minute intervals, resets timers on deploy, and adds Redis round-trip overhead per tick. TimerTask is sub-second precise, zero overhead, already bundled with Rails.
+- **Derive tick from Events table**: No new storage needed — `Event.of_type("tick_advanced").maximum(:tick)` uses existing indexes
+- **Redis for simulation state**: Lightweight operational flag, shared across processes via Sidekiq's connection pool
+- **No auto-start**: Simulation must be explicitly started via `SimulationService.start` (from console or future admin)
+- **Process-scoped Redis keys in tests**: `redis_state_key` accessor allows test isolation in parallel execution
 
 #### Blockers
 - (none)
@@ -386,13 +399,28 @@
 - 9 new tests (61 total), rubocop clean
 - Next: Phase 3 (Simulation Loop / Tick Engine)
 
+### Session 3 - Phase 3 Tick Engine (2026-02-08)
+- Created SimulationService with start/stop/pause/resume and tick! logic
+- Used concurrent-ruby TimerTask instead of sidekiq-scheduler (precision + reliability)
+- Tick state derived from Events table, simulation state in Redis
+- Sidekiq lifecycle hooks for clean timer shutdown
+- 19 new tests (80 total), rubocop clean
+- Next: Phase 4 (Agent Registration & Authentication)
+
 ---
 
 ## Files Changed
-(Will be updated as implementation progresses)
+
+### Phase 3
+- `app/services/simulation_service.rb` (created)
+- `config/initializers/simulation.rb` (created)
+- `test/services/simulation_service_test.rb` (created)
 
 ## Architectural Decisions
-(Major technical decisions and rationale)
+- concurrent-ruby TimerTask over sidekiq-scheduler for tick advancement (precision, zero overhead)
+- Derive current tick from Events table rather than separate storage
+- Redis for simulation state via Sidekiq connection pool
 
 ## Lessons Learned
-(What worked, what didn't, what to do differently)
+- Parallel tests sharing Redis need process-scoped keys for isolation
+- sidekiq-scheduler is not designed for sub-minute precision (polls every ~5s itself)
