@@ -1,6 +1,6 @@
 # NPC Town MVP Progress
 
-## Status: Phase 7 - Complete
+## Status: Phase 8 - Complete
 
 ## Quick Reference
 - Research: `docs/mvp/RESEARCH.md`
@@ -191,13 +191,28 @@
 ---
 
 ### Phase 8: Memory Storage (Observation Stream)
-**Status:** Not Started
+**Status:** Complete
 
 #### Tasks Completed
-- (none yet)
+- MemoryService with create_memory, observe_event, memories_for, on_tick, process_events_into_memories
+- ProcessMemoriesJob for async Sidekiq-based batch memory processing
+- Redis-backed state tracking (last_processed_tick, distributed lock with 30s TTL)
+- Importance scoring: rule-based mapping (agent_moved=2, stamina_changed=2, resource_changed=3, agent_action=3, agent_spoke=4, conversation_started=5, conversation_message=5, conversation_ended=6, agent_registered=7, relationship_changed=7) with self-discount of 1
+- Human-readable event descriptions for all event types
+- Memory trimming (max 1000 per agent, keeps high-importance and recent)
+- Skip logic for tick_advanced, memory_created, reflection_created events (prevents infinite loops)
+- GET /api/v1/agents/:agent_id/memories endpoint (auth required, paginated, filterable by type/importance/tick)
+- PerceptionService updated with recentMemories (last 10 ticks)
+- Agent cache for N+1 prevention during batch processing
+- Tests for MemoryService (observe_event, importance, descriptions, Redis state, trimming)
 
 #### Decisions Made
-- (none yet)
+- Async processing via Sidekiq (ProcessMemoriesJob) instead of inline — prevents tick delays
+- Redis lock (SETNX + TTL) for concurrent processing safety across workers
+- Location-based observation: agents at a location observe all events at that location
+- Self-importance discount of 1 point for agent's own events
+- Memory cap of 1000 per agent with automatic trimming of low-importance old memories
+- Skip memory_created/reflection_created/tick_advanced events to prevent infinite loops
 
 #### Blockers
 - (none)
@@ -470,6 +485,17 @@
 - 33 new tests (174 total), rubocop clean, 0 offenses
 - Next: Phase 8 (Memory Storage)
 
+### Session 8 - Phase 8 Memory Storage (2026-02-08)
+- Created MemoryService with async event-to-memory processing via ProcessMemoriesJob
+- Redis-backed state tracking and distributed lock for concurrent safety
+- Rule-based importance scoring (2-7) with self-discount
+- Human-readable event descriptions for all 13 event types
+- Memory trimming (max 1000 per agent)
+- GET /api/v1/agents/:agent_id/memories API endpoint (auth, paginated, filterable)
+- PerceptionService updated with recentMemories
+- Tests for MemoryService
+- Next: Phase 9 (Memory Retrieval)
+
 ---
 
 ## Files Changed
@@ -499,12 +525,24 @@
 - `test/services/perception_service_test.rb` (modified — updated expected actions)
 - `test/fixtures/agents.yml` (modified — added charlie)
 
+### Phase 8
+- `app/services/memory_service.rb` (created)
+- `app/jobs/process_memories_job.rb` (created)
+- `app/controllers/api/v1/memories_controller.rb` (created)
+- `app/services/perception_service.rb` (modified — added recentMemories)
+- `config/routes.rb` (modified — added memories route)
+- `test/services/memory_service_test.rb` (created)
+
 ## Architectural Decisions
 - concurrent-ruby TimerTask over sidekiq-scheduler for tick advancement (precision, zero overhead)
 - Derive current tick from Events table rather than separate storage
 - Redis for simulation state via Sidekiq connection pool
 - ConversationService as separate service from ActionService for clean separation of concerns
 - System messages (join/leave) use conversation_message event type with system: true payload flag
+- Async memory processing via Sidekiq (ProcessMemoriesJob) to avoid blocking tick advancement
+- Redis SETNX lock for distributed memory processing safety across workers
+- Location-based observation: all agents at a location observe all location events
+- Memory cap of 1000 per agent with automatic low-importance trimming
 
 ## Lessons Learned
 - Parallel tests sharing Redis need process-scoped keys for isolation
