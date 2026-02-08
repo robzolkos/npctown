@@ -11,5 +11,6 @@ Rails.application.routes.draw do
     end
   end
 
+  get "docs", to: "pages#docs"
   root "pages#home"
 end

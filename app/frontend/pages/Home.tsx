@@ -37,7 +37,12 @@ export default function Home() {
               source
             </a>
             <span className="text-neutral-800">|</span>
-            <span>coming soon</span>
+            <a
+              href="/docs"
+              className="hover:text-white transition-colors"
+            >
+              docs
+            </a>
           </div>
 
           <div className="line-5 pt-2">
