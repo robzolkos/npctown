@@ -1,6 +1,6 @@
 # Town Gate Progress
 
-## Status: Step 1 - Completed
+## Status: Step 2 - Completed
 
 ## Quick Reference
 - Research: `docs/towngate/RESEARCH.md`
@@ -10,16 +10,51 @@
 
 ## Step Progress
 
-### Steps 1-5: Database + Models + Events
-**Status:** Step 1 Complete, Steps 2-5 Not Started
+### Step 1: Database Migrations — Core Tables
+**Status:** Completed
 
 #### Decisions Made
-- Owner model uses `own_` prefixed API keys (mirrors Agent `npc_` pattern)
-- GateApplication uses `gapp_` prefix
-- 25 static interview questions across 5 categories
 - owner_id on agents is nullable (backward compatible)
 - probation_until column tracks 24-hour graduated restriction period
 - Statuses include `passed_pending_verification` (interview-before-email flow)
+
+---
+
+### Step 2: Owner Model
+**Status:** Completed
+
+#### Decisions Made
+- Owner model uses `own_` prefixed API keys (mirrors Agent `npc_` pattern exactly)
+- `has_secure_password` for bcrypt password hashing
+- API key generation/authentication/digesting mirrors `agent.rb:46-75`
+- `verified?` checks `verified_at`, `can_register_agent?` checks verified + under limit
+- Agent model updated with `belongs_to :owner, optional: true` and `on_probation` scope
+- 13 tests covering: create_with_api_key, authenticate, verified?, can_register_agent?, email validations, password validation, ID prefix
+
+---
+
+### Step 3: GateApplication Model
+**Status:** Not Started
+
+#### Decisions Made
+- GateApplication uses `gapp_` prefix
+- 7 statuses: pending, interviewing, judging, passed_pending_verification, passed, failed, expired
+
+---
+
+### Step 4: Question Bank
+**Status:** Not Started
+
+#### Decisions Made
+- 25 static interview questions across 5 categories
+
+---
+
+### Step 5: Add Event Types
+**Status:** Not Started
+
+#### Decisions Made
+- 5 new event types for the gate system
 
 ---
 
@@ -144,6 +179,13 @@
 - Added `owner_id` (nullable) and `probation_until` to agents table for backward compatibility
 - All 380 existing tests pass — migrations are purely additive
 
+### 2026-02-08 — Step 2: Owner Model
+- Created `app/models/owner.rb` with PrefixedId, has_secure_password, API key auth (mirroring Agent)
+- Added `belongs_to :owner, optional: true` and `on_probation` scope to Agent model
+- Created `test/fixtures/owners.yml` with verified_owner + unverified_owner fixtures
+- Created `test/models/owner_test.rb` with 13 tests covering all functionality
+- All 393 tests pass, rubocop clean
+
 ### 2026-02-08 — Research & Planning
 - Conducted deep research on Moltbook, OpenClaw, Aivilization, and industry patterns
 - Explored 4 approach options, selected Town Gate interview as primary mechanism
@@ -156,10 +198,14 @@
 ---
 
 ## Files Changed
-- `db/migrate/20260208000004_create_owners.rb` — owners table (email, password_digest, api_key_digest, email_verification_token, verified_at, agent_limit)
-- `db/migrate/20260208000005_create_gate_applications.rb` — gate_applications table (owner_id, agent_id, status, agent details, questions/responses JSONB, judge_reasoning, expires_at)
-- `db/migrate/20260208000006_add_owner_to_agents.rb` — adds owner_id + probation_until to agents table
+- `db/migrate/20260208000004_create_owners.rb` — owners table
+- `db/migrate/20260208000005_create_gate_applications.rb` — gate_applications table
+- `db/migrate/20260208000006_add_owner_to_agents.rb` — adds owner_id + probation_until to agents
 - `db/schema.rb` — auto-updated by Rails
+- `app/models/owner.rb` — Owner model with PrefixedId, has_secure_password, API key auth
+- `app/models/agent.rb` — Added `belongs_to :owner` and `on_probation` scope
+- `test/fixtures/owners.yml` — verified_owner + unverified_owner fixtures
+- `test/models/owner_test.rb` — 13 tests for Owner model
 
 ## Architectural Decisions
 - Owner auth mirrors Agent API key pattern (not JWT, not sessions)

@@ -24,6 +24,9 @@ class Agent < ApplicationRecord
   has_many :conversations, through: :conversation_participants
   has_many :conversation_messages, dependent: :destroy
   has_many :plans, dependent: :destroy
+  belongs_to :owner, optional: true
+
+  scope :on_probation, -> { where("probation_until > ?", Time.current) }
 
   validates :name, presence: true, uniqueness: true
   validates :status, presence: true, inclusion: { in: STATUSES }

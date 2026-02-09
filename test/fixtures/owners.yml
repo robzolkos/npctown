@@ -1,0 +1,15 @@
+verified_owner:
+  id: "own_39MFjVerifiedOwnerTest0001"
+  email: "verified@example.com"
+  password_digest: <%= BCrypt::Password.create("password123") %>
+  api_key_digest: "fixture_digest_verified_owner"
+  agent_limit: 3
+  verified_at: <%= 1.day.ago.to_fs(:db) %>
+
+unverified_owner:
+  id: "own_39MFjUnverifiedOwnerTest01"
+  email: "unverified@example.com"
+  password_digest: <%= BCrypt::Password.create("password123") %>
+  api_key_digest: "fixture_digest_unverified_owner"
+  agent_limit: 3
+  verified_at:
