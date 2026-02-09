@@ -1,6 +1,6 @@
 # Town Gate Progress
 
-## Status: Step 8 - Completed
+## Status: Step 9 - Completed
 
 ## Quick Reference
 - Research: `docs/towngate/RESEARCH.md`
@@ -118,15 +118,20 @@
 ---
 
 ### Step 9: Hybrid Judge
-**Status:** Not Started
+**Status:** Completed
 
 #### Decisions Made
 - Heuristic checks first (free): length, diversity, relevance, personality, timing
 - Grok 4.1 Fast for borderline cases only (~$0.000125/eval)
 - xAI API (OpenAI-compatible) at `https://api.x.ai/v1/chat/completions`
-- Default to PASS on LLM failure
-- Background Sidekiq job for async evaluation
-- API key cached in Redis (1h TTL) for owner retrieval
+- Model: `grok-4-1-fast-non-reasoning` (cheapest xAI option, no reasoning overhead)
+- Default to PASS on LLM failure (availability > strictness)
+- 5 heuristic checks worth 0-20 pts each (total 0-100): pass >= 70, fail < 30, borderline 30-69
+- Heuristic scoring: response length, Jaccard diversity, category keyword relevance, personality trait consistency, timing analysis
+- On pass: agent created with `idle` status, placed in Town Square, 24h probation, API key cached in Redis (1h TTL)
+- On fail: application status → `failed`, reasoning stored
+- Timing check catches bots (all gaps < 3s = 0 pts) and scripted responses (uniform gaps with stddev < 1.0s = 5 pts)
+- GateJudgeJob is idempotent (guards on `status == "judging"`)
 
 ---
 
@@ -290,6 +295,15 @@
 
 ## Session Log
 
+### 2026-02-09 — Step 9: Hybrid Judge
+- Created `app/services/gate_judge_service.rb` with 5 heuristic checks + xAI LLM fallback for borderline cases
+- Replaced stub in `app/jobs/gate_judge_job.rb` with full pass/fail handling (agent creation, Redis caching, events)
+- Created `test/services/gate_judge_service_test.rb` with 16 tests (heuristics, LLM stubs, fallback behavior)
+- Created `test/jobs/gate_judge_job_test.rb` with 7 tests (pass/fail flows, idempotency, agent placement)
+- All 477 tests pass (3 pre-existing OwnersController rate-limit failures unrelated to this step), rubocop clean
+- Manual E2E verified: register owner → interview 5 questions → heuristic judge passes (71/100) → agent created in Town Square with probation
+- First step where the full registration-to-agent-creation loop is complete end-to-end
+
 ### 2026-02-09 — Step 8: Gate Controller
 - Created `app/controllers/api/v1/gate/applications_controller.rb` with create, show, respond actions
 - Added gate namespace routes to `config/routes.rb` (3 endpoints)
@@ -377,6 +391,10 @@
 - `app/controllers/api/v1/gate/applications_controller.rb` — Gate interview API endpoints (create, show, respond)
 - `config/routes.rb` — Added gate namespace with application routes
 - `test/controllers/api/v1/gate/applications_controller_test.rb` — 13 tests for gate controller
+- `app/services/gate_judge_service.rb` — Hybrid judge: 5 heuristic checks + xAI LLM fallback
+- `app/jobs/gate_judge_job.rb` — Full implementation: agent creation, Redis caching, event emission
+- `test/services/gate_judge_service_test.rb` — 16 tests for judge service
+- `test/jobs/gate_judge_job_test.rb` — 7 tests for judge job
 
 ## Architectural Decisions
 - Owner auth mirrors Agent API key pattern (not JWT, not sessions)
