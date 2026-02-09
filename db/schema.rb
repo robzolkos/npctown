@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_08_000003) do
+ActiveRecord::Schema[8.1].define(version: 2026_02_08_000006) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -24,13 +24,16 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_08_000003) do
     t.jsonb "goals", default: [], null: false
     t.string "location_id", limit: 32
     t.string "name", null: false
+    t.string "owner_id", limit: 32
     t.jsonb "personality_traits", default: [], null: false
+    t.datetime "probation_until"
     t.integer "stamina", default: 100, null: false
     t.string "status", default: "idle", null: false
     t.datetime "updated_at", null: false
     t.index ["api_key_digest"], name: "index_agents_on_api_key_digest", unique: true
     t.index ["location_id"], name: "index_agents_on_location_id"
     t.index ["name"], name: "index_agents_on_name", unique: true
+    t.index ["owner_id"], name: "index_agents_on_owner_id"
     t.index ["status"], name: "index_agents_on_status"
   end
 
@@ -81,6 +84,26 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_08_000003) do
     t.index ["tick"], name: "index_events_on_tick"
   end
 
+  create_table "gate_applications", id: { type: :string, limit: 32 }, force: :cascade do |t|
+    t.text "agent_description"
+    t.jsonb "agent_goals", default: [], null: false
+    t.string "agent_id", limit: 32
+    t.string "agent_name", null: false
+    t.jsonb "agent_personality_traits", default: [], null: false
+    t.datetime "created_at", null: false
+    t.integer "current_question_index", default: 0
+    t.datetime "expires_at"
+    t.text "judge_reasoning"
+    t.string "owner_id", limit: 32, null: false
+    t.jsonb "questions", default: [], null: false
+    t.jsonb "responses", default: [], null: false
+    t.string "status", default: "pending", null: false
+    t.datetime "updated_at", null: false
+    t.index ["owner_id", "status"], name: "index_gate_applications_on_owner_id_and_status"
+    t.index ["owner_id"], name: "index_gate_applications_on_owner_id"
+    t.index ["status"], name: "index_gate_applications_on_status"
+  end
+
   create_table "locations", id: { type: :string, limit: 32 }, force: :cascade do |t|
     t.datetime "created_at", null: false
     t.text "description"
@@ -109,6 +132,20 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_08_000003) do
     t.index ["importance"], name: "index_memories_on_importance"
     t.index ["memory_type"], name: "index_memories_on_memory_type"
     t.index ["search_vector"], name: "index_memories_on_search_vector", using: :gin
+  end
+
+  create_table "owners", id: { type: :string, limit: 32 }, force: :cascade do |t|
+    t.integer "agent_limit", default: 3, null: false
+    t.string "api_key_digest", null: false
+    t.datetime "created_at", null: false
+    t.string "email", null: false
+    t.string "email_verification_token"
+    t.string "password_digest", null: false
+    t.datetime "updated_at", null: false
+    t.datetime "verified_at"
+    t.index ["api_key_digest"], name: "index_owners_on_api_key_digest", unique: true
+    t.index ["email"], name: "index_owners_on_email", unique: true
+    t.index ["email_verification_token"], name: "index_owners_on_email_verification_token", unique: true
   end
 
   create_table "plans", id: { type: :string, limit: 32 }, force: :cascade do |t|
@@ -147,6 +184,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_08_000003) do
   add_foreign_key "conversations", "locations"
   add_foreign_key "events", "agents"
   add_foreign_key "events", "locations"
+  add_foreign_key "gate_applications", "owners"
   add_foreign_key "memories", "agents"
   add_foreign_key "memories", "locations"
   add_foreign_key "plans", "agents"

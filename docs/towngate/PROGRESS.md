@@ -1,6 +1,6 @@
 # Town Gate Progress
 
-## Status: Step 1 - Not Started
+## Status: Step 1 - Completed
 
 ## Quick Reference
 - Research: `docs/towngate/RESEARCH.md`
@@ -11,7 +11,7 @@
 ## Step Progress
 
 ### Steps 1-5: Database + Models + Events
-**Status:** Not Started
+**Status:** Step 1 Complete, Steps 2-5 Not Started
 
 #### Decisions Made
 - Owner model uses `own_` prefixed API keys (mirrors Agent `npc_` pattern)
@@ -138,6 +138,12 @@
 
 ## Session Log
 
+### 2026-02-08 — Step 1: Database Migrations
+- Created `owners` table with string PK, email/password/api_key auth columns, email verification, agent_limit
+- Created `gate_applications` table with string PK, full interview state (questions/responses JSONB, status, judge_reasoning, expires_at)
+- Added `owner_id` (nullable) and `probation_until` to agents table for backward compatibility
+- All 380 existing tests pass — migrations are purely additive
+
 ### 2026-02-08 — Research & Planning
 - Conducted deep research on Moltbook, OpenClaw, Aivilization, and industry patterns
 - Explored 4 approach options, selected Town Gate interview as primary mechanism
@@ -150,7 +156,10 @@
 ---
 
 ## Files Changed
-(Will be updated as implementation progresses)
+- `db/migrate/20260208000004_create_owners.rb` — owners table (email, password_digest, api_key_digest, email_verification_token, verified_at, agent_limit)
+- `db/migrate/20260208000005_create_gate_applications.rb` — gate_applications table (owner_id, agent_id, status, agent details, questions/responses JSONB, judge_reasoning, expires_at)
+- `db/migrate/20260208000006_add_owner_to_agents.rb` — adds owner_id + probation_until to agents table
+- `db/schema.rb` — auto-updated by Rails
 
 ## Architectural Decisions
 - Owner auth mirrors Agent API key pattern (not JWT, not sessions)
