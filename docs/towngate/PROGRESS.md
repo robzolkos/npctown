@@ -1,6 +1,6 @@
 # Town Gate Progress
 
-## Status: Step 6 - Completed
+## Status: Step 7 - Completed
 
 ## Quick Reference
 - Research: `docs/towngate/RESEARCH.md`
@@ -82,14 +82,33 @@
 
 ---
 
-### Steps 7-8: Interview Flow
-**Status:** Not Started
+### Step 7: Gate Interview Service
+**Status:** Completed
 
 #### Decisions Made
 - Real-time multi-round interview (multiple API round-trips)
 - 10-minute timeout on entire interview
 - 5 questions per interview, randomly selected (1+ per category)
 - Only one active application per owner at a time
+- Validates owner state (under limit, no active application, name not taken)
+- Emits gate events via EventService on apply and respond
+- `GateInterviewService.apply` creates application, emits started + first question events, returns first question
+- `GateInterviewService.respond` records answer, emits answer event, returns next question or transitions to judging
+- On final answer: status → "judging", enqueues `GateJudgeJob` (stub for Step 9)
+- Expired applications auto-set to "expired" status when respond is called
+- Custom `InterviewError` exception class for validation failures
+- 15 tests covering: apply happy path, event emissions, validation errors, respond flow, final answer judging, expiration, status checks
+
+---
+
+### Step 8: Gate Controller
+**Status:** Not Started
+
+#### Decisions Made
+- `POST /api/v1/gate/applications` to start interview
+- `GET /api/v1/gate/applications/:id` to check status (includes cached API key if passed)
+- `POST /api/v1/gate/applications/:id/respond` to answer questions
+- Uses owner auth (not agent auth)
 
 ---
 
@@ -117,13 +136,23 @@
 
 ---
 
-### Steps 11-12: Spectator Integration
+### Step 11: Spectator Event Formatting
 **Status:** Not Started
 
 #### Decisions Made
 - All interviews visible to spectators (including Q&A)
-- 5 new event types for the gate system
-- Amber/orange color scheme for interview events, green/red for pass/fail
+- Gate events formatted as narrative text (e.g., "Town Elder asks AgentName...")
+- Answers truncated to 200 chars in spectator feed
+
+---
+
+### Step 12: Frontend Event Types + Rendering
+**Status:** Not Started
+
+#### Decisions Made
+- 5 gate event types added to TypeScript EventType union
+- Amber/orange color scheme for interview events, green for pass, red for fail
+- GateEvent renderer component in Feed.tsx
 
 ---
 
@@ -136,13 +165,32 @@
 
 ---
 
-### Steps 14-16: Expiration + Tests + Cleanup
+### Step 14: Application Expiration
+**Status:** Not Started
+
+#### Decisions Made
+- Expiration job runs every 1 minute via sidekiq-scheduler
+- Finds interviewing applications past expires_at, marks as expired
+- Emits gate_application_failed event with reason: "timeout"
+
+---
+
+### Step 15: Tests (Core System)
 **Status:** Not Started
 
 #### Decisions Made
 - Minitest + fixtures (matching project convention)
 - Mock xAI API in judge service tests
-- Expiration job runs every 1 minute via sidekiq-scheduler
+- Covers: gate controller, interview service, judge service
+
+---
+
+### Step 16: Core Cleanup + Docs
+**Status:** Not Started
+
+#### Decisions Made
+- Run rubocop -a and full test suite
+- Update Docs.tsx with Town Gate API documentation
 
 ---
 
@@ -155,25 +203,55 @@
 
 ---
 
-### Steps 18-19: Social Verification + Tier-Aware Limits
+### Step 18: Social Verification Flow
 **Status:** Not Started
 
 #### Decisions Made
 - Twitter/X API free tier for verification (10K reads/month)
-- Notable owners' agents get 2x rate limits
-- Probation skipped for Notable tier
+- Owner generates unique verification code, tweets it, submits tweet URL
+- Verify tweet exists, contains code, and account is real
 
 ---
 
-### Steps 20-22: Sponsor System
+### Step 19: Tier-Aware Rate Limits + Agent Slots
 **Status:** Not Started
 
 #### Decisions Made
-- Owner invite codes skip interview entirely (3 per owner, replenish 1/week)
-- Agent-to-agent vouching reduces probation from 24h to 6h
-- Sponsor agent must be 7+ days old, not on probation
-- Each agent can sponsor 1 newcomer per day
+- Notable owners' agents get 2x rate limits
+- Probation skipped for Notable tier
+- Agent limit dynamic: resident/citizen = 3, notable = 5
+- Email verification upgrades tier from resident to citizen
+
+---
+
+### Step 20: Sponsor Model + Migration
+**Status:** Not Started
+
+#### Decisions Made
 - Sponsorship model uses `spn_` prefix
+- Sponsorship types: "invite" (owner-to-owner) and "vouch" (agent-to-agent)
+- Sponsor agent must be 7+ days old, not on probation
+
+---
+
+### Step 21: Owner Invite Codes
+**Status:** Not Started
+
+#### Decisions Made
+- Owner invite codes skip interview entirely
+- 3 invite codes per owner, replenish 1/week
+- New owner registers with invite code → agent created directly after email verification
+
+---
+
+### Step 22: Agent-to-Agent Sponsorship
+**Status:** Not Started
+
+#### Decisions Made
+- Agent-to-agent vouching reduces probation from 24h to 6h
+- Each agent can sponsor 1 newcomer per day
+- Vouching is a new action type, emits `agent_sponsored` event
+- Visible to spectators as entertainment content
 
 ---
 
@@ -186,8 +264,22 @@
 
 ---
 
-### Steps 24-25: Growth Tests + Final Cleanup
+### Step 24: Growth Mechanics Tests
 **Status:** Not Started
+
+#### Decisions Made
+- Test sponsorship model, social verification, invite codes, dashboard
+- Mock Twitter API in social verification tests
+
+---
+
+### Step 25: Final Cleanup
+**Status:** Not Started
+
+#### Decisions Made
+- Run rubocop -a and full test suite
+- Browser verify gate + sponsor events render in feed
+- Manual API test of full registration-to-agent flow
 
 ---
 
@@ -237,6 +329,13 @@
 - All 426 tests pass, rubocop clean
 - Lesson: parallel test processes share Redis — use targeted key cleanup in setup, not `flushdb`
 
+### 2026-02-09 — Step 7: Gate Interview Service
+- Created `app/services/gate_interview_service.rb` with `apply` and `respond` class methods
+- Created `app/jobs/gate_judge_job.rb` stub (Sidekiq job for Step 9)
+- Created `test/services/gate_interview_service_test.rb` with 15 tests
+- All 441 tests pass, rubocop clean
+- Lesson: fixture data creates active applications — tests using `apply` must clear active fixtures first via `destroy_all`
+
 ---
 
 ## Files Changed
@@ -259,6 +358,9 @@
 - `app/controllers/api/v1/owners_controller.rb` — Register, login, verify endpoints
 - `config/routes.rb` — Added owner routes (create, login, verify)
 - `test/controllers/api/v1/owners_controller_test.rb` — 12 tests for owner endpoints
+- `app/services/gate_interview_service.rb` — Interview orchestrator with apply + respond methods
+- `app/jobs/gate_judge_job.rb` — Stub Sidekiq job for hybrid judging (Step 9)
+- `test/services/gate_interview_service_test.rb` — 15 tests for interview service
 
 ## Architectural Decisions
 - Owner auth mirrors Agent API key pattern (not JWT, not sessions)
@@ -273,3 +375,4 @@
 ## Lessons Learned
 - Fixtures with string PKs (prefixed KSUIDs) must use explicit string IDs for FK columns, not YAML label references — Rails hashes labels to integers which violate string FK constraints
 - Parallel test processes share Redis — never use `flushdb` in setup; instead clear only the specific keys your tests create (e.g., `npctown:ratelimit:ip:*:owner_*`)
+- Fixture data persists across tests — when testing service methods that check for active applications, clear existing fixture applications in setup (`owner.gate_applications.active.destroy_all`)
