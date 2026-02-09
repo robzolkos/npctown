@@ -45,6 +45,11 @@ class EventTest < ActiveSupport::TestCase
     assert_includes Event::TYPES, "plan_updated"
     assert_includes Event::TYPES, "plan_completed"
     assert_includes Event::TYPES, "plan_abandoned"
-    assert_equal 17, Event::TYPES.length
+    assert_includes Event::TYPES, "gate_application_started"
+    assert_includes Event::TYPES, "gate_interview_question"
+    assert_includes Event::TYPES, "gate_interview_answer"
+    assert_includes Event::TYPES, "gate_application_passed"
+    assert_includes Event::TYPES, "gate_application_failed"
+    assert_equal 22, Event::TYPES.length
   end
 end

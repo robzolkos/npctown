@@ -1,6 +1,6 @@
 # Town Gate Progress
 
-## Status: Step 3 - Completed
+## Status: Step 5 - Completed
 
 ## Quick Reference
 - Research: `docs/towngate/RESEARCH.md`
@@ -48,18 +48,23 @@
 ---
 
 ### Step 4: Question Bank
-**Status:** Not Started
+**Status:** Completed
 
 #### Decisions Made
-- 25 static interview questions across 5 categories
+- 25 static interview questions across 5 categories (intent, identity, social, creativity, ethics)
+- Nested module: `GateApplication::QuestionBank` — first nested class in codebase
+- Question IDs use `{category}_{n}` format (e.g., `intent_1`, `ethics_3`)
+- `select_questions` picks 1 random question per category, shuffles result
+- 7 tests covering: count, structure, categories, uniqueness, selection, randomness
 
 ---
 
 ### Step 5: Add Event Types
-**Status:** Not Started
+**Status:** Completed
 
 #### Decisions Made
-- 5 new event types for the gate system
+- 5 new event types added to `Event::TYPES`: `gate_application_started`, `gate_interview_question`, `gate_interview_answer`, `gate_application_passed`, `gate_application_failed`
+- Updated existing event test to check for new types (17 → 22 total)
 
 ---
 
@@ -207,6 +212,13 @@
 - All 407 tests pass, rubocop clean
 - Lesson: fixtures with string PKs need explicit `owner_id: "own_..."` not label references (`owner: verified_owner`) since Rails hashes labels to integers for FK resolution
 
+### 2026-02-09 — Steps 4-5: Question Bank + Event Types
+- Created `app/models/gate_application/question_bank.rb` with 25 questions across 5 categories
+- Created `test/models/gate_application/question_bank_test.rb` with 7 tests
+- Added 5 gate event types to `app/models/event.rb` TYPES array (17 → 22 total)
+- Updated `test/models/event_test.rb` to validate new event types
+- All 414 tests pass, rubocop clean
+
 ---
 
 ## Files Changed
@@ -221,6 +233,10 @@
 - `app/models/gate_application.rb` — GateApplication model with interview state machine
 - `test/fixtures/gate_applications.yml` — interviewing + passed application fixtures
 - `test/models/gate_application_test.rb` — 14 tests for GateApplication model
+- `app/models/gate_application/question_bank.rb` — 25 questions across 5 categories with selection algorithm
+- `test/models/gate_application/question_bank_test.rb` — 7 tests for QuestionBank
+- `app/models/event.rb` — Added 5 gate event types to TYPES array
+- `test/models/event_test.rb` — Updated to validate new gate event types
 
 ## Architectural Decisions
 - Owner auth mirrors Agent API key pattern (not JWT, not sessions)

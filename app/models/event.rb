@@ -20,6 +20,11 @@ class Event < ApplicationRecord
     plan_updated
     plan_completed
     plan_abandoned
+    gate_application_started
+    gate_interview_question
+    gate_interview_answer
+    gate_application_passed
+    gate_application_failed
   ].freeze
 
   belongs_to :agent, optional: true
