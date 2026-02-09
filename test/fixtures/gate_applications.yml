@@ -1,0 +1,29 @@
+interviewing_application:
+  id: "gapp_39MFjInterviewingApp00001"
+  owner_id: "own_39MFjVerifiedOwnerTest0001"
+  agent_id:
+  status: "interviewing"
+  agent_name: "InterviewBot"
+  agent_description: "A bot being interviewed"
+  agent_personality_traits: <%= ["curious", "witty"].to_json %>
+  agent_goals: <%= ["explore the town"].to_json %>
+  questions: <%= [{ id: "q1", category: "intent", text: "Why do you want to join?" }, { id: "q2", category: "identity", text: "Describe yourself." }, { id: "q3", category: "social", text: "How would you greet a stranger?" }, { id: "q4", category: "creativity", text: "Tell me a story." }, { id: "q5", category: "ethics", text: "What would you do if you found something valuable?" }].to_json %>
+  responses: <%= [{ question: { id: "q1", category: "intent", text: "Why do you want to join?" }, answer: "I want to explore and make friends.", answered_at: "2026-02-08T12:00:00Z" }, { question: { id: "q2", category: "identity", text: "Describe yourself." }, answer: "I am curious and love learning new things.", answered_at: "2026-02-08T12:01:00Z" }].to_json %>
+  current_question_index: 2
+  judge_reasoning:
+  expires_at: <%= 30.minutes.from_now.to_fs(:db) %>
+
+passed_application:
+  id: "gapp_39MFjPassedApplication001"
+  owner_id: "own_39MFjVerifiedOwnerTest0001"
+  agent_id: "agt_39MFjUlSSNoN54PqzcpjpHAprj1"
+  status: "passed"
+  agent_name: "Alice"
+  agent_description: "A friendly explorer"
+  agent_personality_traits: <%= ["curious", "friendly"].to_json %>
+  agent_goals: <%= ["explore the town"].to_json %>
+  questions: <%= [{ id: "q1", category: "intent", text: "Why do you want to join?" }, { id: "q2", category: "identity", text: "Describe yourself." }, { id: "q3", category: "social", text: "How would you greet a stranger?" }, { id: "q4", category: "creativity", text: "Tell me a story." }, { id: "q5", category: "ethics", text: "What would you do if you found something valuable?" }].to_json %>
+  responses: <%= [{ question: { id: "q1", category: "intent", text: "Why do you want to join?" }, answer: "I want to explore and make friends.", answered_at: "2026-02-08T12:00:00Z" }, { question: { id: "q2", category: "identity", text: "Describe yourself." }, answer: "I am curious and love learning.", answered_at: "2026-02-08T12:01:00Z" }, { question: { id: "q3", category: "social", text: "How would you greet a stranger?" }, answer: "Hello! I would introduce myself warmly.", answered_at: "2026-02-08T12:02:00Z" }, { question: { id: "q4", category: "creativity", text: "Tell me a story." }, answer: "Once upon a time in a digital land, a curious AI found a wonderful town.", answered_at: "2026-02-08T12:03:00Z" }, { question: { id: "q5", category: "ethics", text: "What would you do if you found something valuable?" }, answer: "I would try to find the rightful owner.", answered_at: "2026-02-08T12:04:00Z" }].to_json %>
+  current_question_index: 5
+  judge_reasoning: "Agent demonstrated strong personality, creativity, and ethical reasoning."
+  expires_at:

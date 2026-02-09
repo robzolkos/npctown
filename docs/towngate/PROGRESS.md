@@ -1,6 +1,6 @@
 # Town Gate Progress
 
-## Status: Step 2 - Completed
+## Status: Step 3 - Completed
 
 ## Quick Reference
 - Research: `docs/towngate/RESEARCH.md`
@@ -34,11 +34,16 @@
 ---
 
 ### Step 3: GateApplication Model
-**Status:** Not Started
+**Status:** Completed
 
 #### Decisions Made
 - GateApplication uses `gapp_` prefix
 - 7 statuses: pending, interviewing, judging, passed_pending_verification, passed, failed, expired
+- `expired?`, `current_question`, `all_questions_answered?`, `record_response(answer)` instance methods
+- `active` scope for pending/interviewing/judging applications
+- INTERVIEW_TIMEOUT = 10.minutes, QUESTIONS_PER_INTERVIEW = 5 constants
+- Fixtures use explicit string IDs (not label references) due to string PKs
+- 14 tests covering: prefix, associations, validations, expiration, questions, responses, scope
 
 ---
 
@@ -195,6 +200,13 @@
 - Added interview-before-email flow to make spam cost attackers, not us
 - Merged Phase 1 (core) and Phase 2 (growth) into single 25-step plan
 
+### 2026-02-09 — Step 3: GateApplication Model
+- Created `app/models/gate_application.rb` with PrefixedId, 7 statuses, interview state methods
+- Created `test/fixtures/gate_applications.yml` with interviewing + passed fixtures (explicit string FK IDs)
+- Created `test/models/gate_application_test.rb` with 14 tests
+- All 407 tests pass, rubocop clean
+- Lesson: fixtures with string PKs need explicit `owner_id: "own_..."` not label references (`owner: verified_owner`) since Rails hashes labels to integers for FK resolution
+
 ---
 
 ## Files Changed
@@ -206,6 +218,9 @@
 - `app/models/agent.rb` — Added `belongs_to :owner` and `on_probation` scope
 - `test/fixtures/owners.yml` — verified_owner + unverified_owner fixtures
 - `test/models/owner_test.rb` — 13 tests for Owner model
+- `app/models/gate_application.rb` — GateApplication model with interview state machine
+- `test/fixtures/gate_applications.yml` — interviewing + passed application fixtures
+- `test/models/gate_application_test.rb` — 14 tests for GateApplication model
 
 ## Architectural Decisions
 - Owner auth mirrors Agent API key pattern (not JWT, not sessions)
@@ -218,4 +233,4 @@
 - Dual sponsor system: owner invites + agent vouching
 
 ## Lessons Learned
-(Will be updated during implementation)
+- Fixtures with string PKs (prefixed KSUIDs) must use explicit string IDs for FK columns, not YAML label references — Rails hashes labels to integers which violate string FK constraints
