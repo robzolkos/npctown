@@ -1,6 +1,6 @@
 # Town Gate Progress
 
-## Status: Step 7 - Completed
+## Status: Step 8 - Completed
 
 ## Quick Reference
 - Research: `docs/towngate/RESEARCH.md`
@@ -102,13 +102,18 @@
 ---
 
 ### Step 8: Gate Controller
-**Status:** Not Started
+**Status:** Completed
 
 #### Decisions Made
 - `POST /api/v1/gate/applications` to start interview
 - `GET /api/v1/gate/applications/:id` to check status (includes cached API key if passed)
 - `POST /api/v1/gate/applications/:id/respond` to answer questions
 - Uses owner auth (not agent auth)
+- Thin controller pattern — delegates all business logic to `GateInterviewService`
+- Application lookups always scoped to `current_owner.gate_applications` for security
+- `rescue_from ActiveRecord::RecordNotFound` for 404s, `rescue_from ActiveRecord::RecordInvalid` for validation errors
+- Redis API key read via `Sidekiq.redis` with `StandardError` rescue → nil (graceful if Redis down)
+- 13 tests covering create/show/respond happy paths, auth, validation, scoping, expiration
 
 ---
 
@@ -285,6 +290,14 @@
 
 ## Session Log
 
+### 2026-02-09 — Step 8: Gate Controller
+- Created `app/controllers/api/v1/gate/applications_controller.rb` with create, show, respond actions
+- Added gate namespace routes to `config/routes.rb` (3 endpoints)
+- Created `test/controllers/api/v1/gate/applications_controller_test.rb` with 13 tests
+- All 454 tests pass, rubocop clean
+- Thin controller delegates to GateInterviewService; handles RecordNotFound → 404, RecordInvalid → 422, InterviewError → 422
+- Redis API key cache read for passed applications (key set by GateJudgeJob in Step 9)
+
 ### 2026-02-08 — Step 1: Database Migrations
 - Created `owners` table with string PK, email/password/api_key auth columns, email verification, agent_limit
 - Created `gate_applications` table with string PK, full interview state (questions/responses JSONB, status, judge_reasoning, expires_at)
@@ -361,6 +374,9 @@
 - `app/services/gate_interview_service.rb` — Interview orchestrator with apply + respond methods
 - `app/jobs/gate_judge_job.rb` — Stub Sidekiq job for hybrid judging (Step 9)
 - `test/services/gate_interview_service_test.rb` — 15 tests for interview service
+- `app/controllers/api/v1/gate/applications_controller.rb` — Gate interview API endpoints (create, show, respond)
+- `config/routes.rb` — Added gate namespace with application routes
+- `test/controllers/api/v1/gate/applications_controller_test.rb` — 13 tests for gate controller
 
 ## Architectural Decisions
 - Owner auth mirrors Agent API key pattern (not JWT, not sessions)

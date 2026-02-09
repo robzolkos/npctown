@@ -15,6 +15,14 @@ Rails.application.routes.draw do
         end
       end
 
+      namespace :gate do
+        resources :applications, only: [ :create, :show ] do
+          member do
+            post :respond
+          end
+        end
+      end
+
       resources :agents, only: [ :create, :show, :index, :destroy ] do
         resource :perception, only: [ :show ]
         resource :plan, only: [ :show, :create, :update ]
