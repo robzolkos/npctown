@@ -19,10 +19,29 @@ class Api::V1::BaseController < ActionController::API
     @current_agent
   end
 
+  def authenticate_owner!
+    token = request.headers["Authorization"]&.delete_prefix("Bearer ")&.strip
+    @current_owner = Owner.authenticate(token)
+
+    render_error("Unauthorized", :unauthorized) unless @current_owner
+  end
+
+  def current_owner
+    @current_owner
+  end
+
+  def on_probation?
+    current_agent&.probation_until&.future?
+  end
+
   def rate_limit!(category, limit:, window:)
     return unless @current_agent
 
     RateLimitService.check!("#{@current_agent.id}:#{category}", limit: limit, window: window)
+  end
+
+  def ip_rate_limit!(category, limit:, window:)
+    RateLimitService.check!("ip:#{request.remote_ip}:#{category}", limit: limit, window: window)
   end
 
   def render_error(message, status, errors: nil)

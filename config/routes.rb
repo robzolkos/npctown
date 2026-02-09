@@ -8,6 +8,13 @@ Rails.application.routes.draw do
         get :history
       end
 
+      resources :owners, only: [ :create ] do
+        collection do
+          post :login
+          post :verify
+        end
+      end
+
       resources :agents, only: [ :create, :show, :index, :destroy ] do
         resource :perception, only: [ :show ]
         resource :plan, only: [ :show, :create, :update ]

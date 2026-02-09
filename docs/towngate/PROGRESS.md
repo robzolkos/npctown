@@ -1,6 +1,6 @@
 # Town Gate Progress
 
-## Status: Step 5 - Completed
+## Status: Step 6 - Completed
 
 ## Quick Reference
 - Research: `docs/towngate/RESEARCH.md`
@@ -68,14 +68,24 @@
 
 ---
 
-### Steps 6-8: Owner Auth + Interview Flow
-**Status:** Not Started
+### Step 6: Owner Auth Endpoints
+**Status:** Completed
 
 #### Decisions Made
 - Owner auth uses same Bearer token pattern as agent auth
 - Login rotates API key (stateless, no session table)
-- Auto-verify email in development mode
+- Auto-verify email in non-production (covers dev + test)
 - Rate limits: 5 registrations/hour per IP, 10 logins/5min per IP
+- IP-based rate limiting via `ip_rate_limit!` helper in BaseController
+- `authenticate_owner!` and `on_probation?` helpers added to BaseController for later steps
+- 12 tests covering: register, login, verify, rate limits, validation errors
+
+---
+
+### Steps 7-8: Interview Flow
+**Status:** Not Started
+
+#### Decisions Made
 - Real-time multi-round interview (multiple API round-trips)
 - 10-minute timeout on entire interview
 - 5 questions per interview, randomly selected (1+ per category)
@@ -219,6 +229,14 @@
 - Updated `test/models/event_test.rb` to validate new event types
 - All 414 tests pass, rubocop clean
 
+### 2026-02-09 — Step 6: Owner Auth Endpoints
+- Added `authenticate_owner!`, `current_owner`, `on_probation?`, `ip_rate_limit!` to `base_controller.rb`
+- Created `app/controllers/api/v1/owners_controller.rb` with register/login/verify endpoints
+- Added owner routes to `config/routes.rb`: POST create, POST login, POST verify
+- Created `test/controllers/api/v1/owners_controller_test.rb` with 12 tests
+- All 426 tests pass, rubocop clean
+- Lesson: parallel test processes share Redis — use targeted key cleanup in setup, not `flushdb`
+
 ---
 
 ## Files Changed
@@ -237,6 +255,10 @@
 - `test/models/gate_application/question_bank_test.rb` — 7 tests for QuestionBank
 - `app/models/event.rb` — Added 5 gate event types to TYPES array
 - `test/models/event_test.rb` — Updated to validate new gate event types
+- `app/controllers/api/v1/base_controller.rb` — Added `authenticate_owner!`, `current_owner`, `on_probation?`, `ip_rate_limit!`
+- `app/controllers/api/v1/owners_controller.rb` — Register, login, verify endpoints
+- `config/routes.rb` — Added owner routes (create, login, verify)
+- `test/controllers/api/v1/owners_controller_test.rb` — 12 tests for owner endpoints
 
 ## Architectural Decisions
 - Owner auth mirrors Agent API key pattern (not JWT, not sessions)
@@ -250,3 +272,4 @@
 
 ## Lessons Learned
 - Fixtures with string PKs (prefixed KSUIDs) must use explicit string IDs for FK columns, not YAML label references — Rails hashes labels to integers which violate string FK constraints
+- Parallel test processes share Redis — never use `flushdb` in setup; instead clear only the specific keys your tests create (e.g., `npctown:ratelimit:ip:*:owner_*`)
